@@ -1,0 +1,31 @@
+export default {
+  common: {
+    welcome: 'Welcome',
+    signIn: 'Sign In',
+    signUp: 'Sign Up',
+    email: 'Email',
+    password: 'Password',
+    continue: 'Continue',
+    back: 'Back',
+    phoneNumber: 'Phone Number',
+    done: 'Done',
+  },
+  onboarding: {
+    selectUserType: 'Select User Type',
+    customer: 'Customer',
+    driver: 'Driver',
+    customerDescription: 'I want to send packages',
+    driverDescription: 'I want to deliver packages',
+  },
+  auth: {
+    signInTitle: 'Sign in to your account',
+    signUpTitle: 'Create an account',
+    forgotPassword: 'Forgot Password?',
+    noAccount: 'Don\'t have an account?',
+    hasAccount: 'Already have an account?',
+    enterPhoneNumber: 'Enter your phone number',
+    useEmail: 'Use Email instead',
+    verifyPhoneNumber: 'Verify Phone Number',
+    enterVerificationCode: 'Enter the verification code sent to',
+  },
+};

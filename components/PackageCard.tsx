@@ -1,121 +1,120 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Colors from '@/constants/Colors';
-import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
-import { StatusBadge } from './StatusBadge';
-import { PickerAvatar } from './PickerAvatar';
-import { MapPin, MoreHorizontal } from 'lucide-react-native';
+import { spacing, fontSizes } from '@/constants/Layout';
+import { Package, MapPin } from 'lucide-react-native';
+import StatusBadge from './StatusBadge';
 
-interface PackageCardProps {
-  title: string;
-  location: string;
-  date: string;
-  pickerId: number;
-  status: 'pending' | 'progress' | 'delivered' | 'delayed';
-  imageUrl: string;
-  onPress?: () => void;
-}
+type PackageCardProps = {
+  package: {
+    id: string;
+    title: string;
+    status: string;
+    from: string;
+    to: string;
+    created: string;
+  };
+  onPress: () => void;
+};
 
-export function PackageCard({ 
-  title, 
-  location, 
-  date, 
-  pickerId, 
-  status, 
-  imageUrl,
-  onPress 
-}: PackageCardProps) {
+export default function PackageCard({ package: pkg, onPress }: PackageCardProps) {
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: imageUrl }} style={styles.image} />
-        <View style={styles.pickerContainer}>
-          <PickerAvatar pickerId={pickerId} size={36} />
+    <Pressable 
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.pressed
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.header}>
+        <View style={styles.iconContainer}>
+          <Package size={24} color={Colors.primary.DEFAULT} />
+        </View>
+        <Text style={styles.title}>{pkg.title}</Text>
+        <StatusBadge status={pkg.status} />
+      </View>
+
+      <View style={styles.details}>
+        <View style={styles.locationRow}>
+          <MapPin size={16} color={Colors.gray[500]} />
+          <Text style={styles.locationText} numberOfLines={1}>
+            From: {pkg.from}
+          </Text>
+        </View>
+        <View style={styles.locationRow}>
+          <MapPin size={16} color={Colors.gray[500]} />
+          <Text style={styles.locationText} numberOfLines={1}>
+            To: {pkg.to}
+          </Text>
         </View>
       </View>
-      <View style={styles.contentContainer}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <TouchableOpacity>
-            <MoreHorizontal size={20} color={Colors.gray[600]} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.locationContainer}>
-          <MapPin size={14} color={Colors.gray[600]} />
-          <Text style={styles.locationText} numberOfLines={1}>{location}</Text>
-        </View>
-        <View style={styles.footer}>
-          <Text style={styles.dateText}>{date}</Text>
-          <View style={styles.badgeContainer}>
-            <StatusBadge status={status} size="small" />
-          </View>
-        </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.date}>
+          Created: {new Date(pkg.created).toLocaleDateString()}
+        </Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.white,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  imageContainer: {
-    position: 'relative',
-    height: 120,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  pickerContainer: {
-    position: 'absolute',
-    bottom: -18,
-    right: spacing.md,
-  },
-  contentContainer: {
+    borderRadius: 12,
     padding: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  headerContainer: {
+  pressed: {
+    opacity: 0.7,
+  },
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
   },
   title: {
+    flex: 1,
     fontFamily: 'Poppins-SemiBold',
     fontSize: fontSizes.md,
     color: Colors.gray[800],
-    flex: 1,
   },
-  locationContainer: {
+  details: {
+    marginBottom: spacing.md,
+  },
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
   locationText: {
+    flex: 1,
     fontFamily: 'Poppins-Regular',
-    fontSize: fontSizes.xs,
+    fontSize: fontSizes.sm,
     color: Colors.gray[600],
     marginLeft: spacing.xs,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[200],
+    paddingTop: spacing.sm,
   },
-  dateText: {
+  date: {
     fontFamily: 'Poppins-Regular',
     fontSize: fontSizes.xs,
     color: Colors.gray[500],
-  },
-  badgeContainer: {
-    alignSelf: 'flex-end',
   },
 });

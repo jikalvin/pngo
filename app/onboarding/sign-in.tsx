@@ -7,13 +7,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { useDispatch } from 'react-redux';
+import { setAuthenticated, setUser } from '@/store/authSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function SignInScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [countryCode, setCountryCode] = useState('+237');
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
   
   const handleContinue = () => {
-    router.push('/onboarding/verify');
+    // Dummy authentication - in a real app, this would make an API call
+    if (phoneNumber) {
+      dispatch(setAuthenticated(true));
+      dispatch(setUser({
+        id: '1',
+        email: 'dummy@example.com',
+        phoneNumber: `${countryCode}${phoneNumber}`,
+        userType: 'customer'
+      }));
+      router.push('/onboarding/verify');
+    }
   };
   
   const goBack = () => {
@@ -36,21 +51,21 @@ export default function SignInScreen() {
           entering={FadeIn.duration(800).delay(300)}
           style={styles.headerContainer}
         >
-          <Text style={styles.title}>Sign In</Text>
+          <Text style={styles.title}>{t('auth.signInTitle')}</Text>
         </Animated.View>
 
         <Animated.View 
           entering={FadeIn.duration(800).delay(500)}
           style={styles.formContainer}
         >
-          <Text style={styles.label}>Phone Number</Text>
+          <Text style={styles.label}>{t('common.phoneNumber')}</Text>
           <View style={styles.phoneInputContainer}>
             <TouchableOpacity style={styles.countryCodeContainer}>
               <Text style={styles.countryCode}>{countryCode}</Text>
             </TouchableOpacity>
             <TextInput
               style={styles.phoneInput}
-              placeholder="Enter your phone number"
+              placeholder={t('auth.enterPhoneNumber')}
               placeholderTextColor={Colors.gray[400]}
               keyboardType="phone-pad"
               value={phoneNumber}
@@ -65,7 +80,7 @@ export default function SignInScreen() {
               onPress={goBack}
             >
               <ChevronLeft size={24} color={Colors.primary.DEFAULT} />
-              <Text style={styles.backButtonText}>BACK</Text>
+              <Text style={styles.backButtonText}>{t('common.back')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -73,13 +88,13 @@ export default function SignInScreen() {
               onPress={handleContinue}
               disabled={!phoneNumber}
             >
-              <Text style={styles.continueButtonText}>CONTINUE</Text>
+              <Text style={styles.continueButtonText}>{t('common.continue')}</Text>
               <ChevronRight size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
           
           <TouchableOpacity style={styles.emailContainer}>
-            <Text style={styles.emailText}>Use Email instead</Text>
+            <Text style={styles.emailText}>{t('auth.useEmail')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>

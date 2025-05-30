@@ -1,70 +1,45 @@
 import { View, Text, StyleSheet } from 'react-native';
-import Colors, { StatusColors } from '@/constants/Colors';
-import { spacing, fontSizes, borderRadius } from '@/constants/Layout';
+import Colors from '@/constants/Colors';
+import { spacing, fontSizes } from '@/constants/Layout';
 
-type StatusType = 'available' | 'unavailable' | 'pending' | 'completed' | 'ongoing' | 'upcoming' | 'delivered' | 'delayed' | 'progress';
+type StatusBadgeProps = {
+  status: string;
+};
 
-interface StatusBadgeProps {
-  status: StatusType;
-  size?: 'small' | 'medium' | 'large';
-}
+const STATUS_COLORS: { [key: string]: { bg: string; text: string } } = {
+  pending: {
+    bg: Colors.warning[100],
+    text: Colors.warning[700],
+  },
+  in_transit: {
+    bg: Colors.info[100],
+    text: Colors.info[700],
+  },
+  delivered: {
+    bg: Colors.success[100],
+    text: Colors.success[700],
+  },
+  cancelled: {
+    bg: Colors.error[100],
+    text: Colors.error[700],
+  },
+};
 
-export function StatusBadge({ status, size = 'medium' }: StatusBadgeProps) {
-  const getStatusColor = () => {
-    return StatusColors[status] || Colors.gray[400];
-  };
+const STATUS_LABELS: { [key: string]: string } = {
+  pending: 'Pending',
+  in_transit: 'In Transit',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
 
-  const getStatusText = () => {
-    switch (status) {
-      case 'available':
-        return 'Available';
-      case 'unavailable':
-        return 'Unavailable';
-      case 'pending':
-        return 'Pending';
-      case 'completed':
-        return 'Completed';
-      case 'ongoing':
-        return 'Ongoing';
-      case 'upcoming':
-        return 'Upcoming';
-      case 'delivered':
-        return 'Delivered';
-      case 'delayed':
-        return 'Delayed';
-      case 'progress':
-        return 'In Progress';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const sizeStyles = {
-    small: {
-      paddingVertical: spacing.xs / 2,
-      paddingHorizontal: spacing.sm,
-      fontSize: fontSizes.xs - 2,
-    },
-    medium: {
-      paddingVertical: spacing.xs,
-      paddingHorizontal: spacing.sm,
-      fontSize: fontSizes.xs,
-    },
-    large: {
-      paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.md,
-      fontSize: fontSizes.sm,
-    },
-  };
+export default function StatusBadge({ status }: StatusBadgeProps) {
+  const colors = STATUS_COLORS[status] || STATUS_COLORS.pending;
+  const label = STATUS_LABELS[status] || status;
 
   return (
-    <View style={[styles.container, { backgroundColor: getStatusColor() }]}>
-      <Text style={[
-        styles.text, 
-        { fontSize: sizeStyles[size].fontSize },
-        { paddingVertical: sizeStyles[size].paddingVertical, paddingHorizontal: sizeStyles[size].paddingHorizontal },
-      ]}>
-        {getStatusText()}
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.text, { color: colors.text }]}>
+        {label}
       </Text>
     </View>
   );
@@ -72,11 +47,12 @@ export function StatusBadge({ status, size = 'medium' }: StatusBadgeProps) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
   },
   text: {
     fontFamily: 'Poppins-Medium',
-    color: Colors.white,
-    textAlign: 'center',
+    fontSize: fontSizes.xs,
   },
 });

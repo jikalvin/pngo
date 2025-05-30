@@ -8,6 +8,8 @@ import Layout, { spacing, fontSizes, lineHeights } from '@/constants/Layout';
 import { ChevronRight } from 'lucide-react-native';
 
 export default function OnboardingScreen() {
+  console.log('Onboarding screen rendered');
+
   const navigateToUserTypeSelection = () => {
     router.push('/onboarding/user-type');
   };

@@ -1,0 +1,31 @@
+export default {
+  common: {
+    welcome: 'Bienvenido',
+    signIn: 'Iniciar Sesión',
+    signUp: 'Registrarse',
+    email: 'Correo electrónico',
+    password: 'Contraseña',
+    continue: 'Continuar',
+    back: 'Atrás',
+    phoneNumber: 'Número de teléfono',
+    done: 'Listo',
+  },
+  onboarding: {
+    selectUserType: 'Seleccionar tipo de usuario',
+    customer: 'Cliente',
+    driver: 'Conductor',
+    customerDescription: 'Quiero enviar paquetes',
+    driverDescription: 'Quiero entregar paquetes',
+  },
+  auth: {
+    signInTitle: 'Inicia sesión en tu cuenta',
+    signUpTitle: 'Crear una cuenta',
+    forgotPassword: '¿Olvidaste tu contraseña?',
+    noAccount: '¿No tienes una cuenta?',
+    hasAccount: '¿Ya tienes una cuenta?',
+    enterPhoneNumber: 'Ingresa tu número de teléfono',
+    useEmail: 'Usar correo electrónico',
+    verifyPhoneNumber: 'Verificar número de teléfono',
+    enterVerificationCode: 'Ingresa el código de verificación enviado a',
+  },
+};

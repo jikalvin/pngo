@@ -5,7 +5,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Bell, Search, Filter } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
-import { PickerListItem } from '@/components/PickerListItem';
+import PickerListItem from '@/components/PickerListItem';
 
 const pickers = [
   { 

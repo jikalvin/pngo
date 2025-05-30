@@ -2,13 +2,14 @@ import { StyleSheet, Image, View } from 'react-native';
 import Colors from '@/constants/Colors';
 
 interface PickerAvatarProps {
-  pickerId: number;
+  pickerId?: number;
   size?: number;
   showBadge?: boolean;
   isAvailable?: boolean;
+  uri?: string;
 }
 
-export function PickerAvatar({ pickerId, size = 50, showBadge = false, isAvailable = true }: PickerAvatarProps) {
+export function PickerAvatar({ pickerId = 0, size = 50, showBadge = false, isAvailable = true, uri }: PickerAvatarProps) {
   // Generate a predictable avatar URL based on the pickerId
   const getAvatarUrl = () => {
     const imageIds = [
@@ -27,7 +28,7 @@ export function PickerAvatar({ pickerId, size = 50, showBadge = false, isAvailab
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: getAvatarUrl() }}
+        source={{ uri: uri || getAvatarUrl() }}
         style={[
           styles.avatar,
           { width: size, height: size, borderRadius: size / 2 }

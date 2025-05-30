@@ -6,8 +6,8 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Bell, Plus, Search, ChevronRight, Filter } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
-import { StatusBadge } from '@/components/StatusBadge';
-import { PackageCard } from '@/components/PackageCard';
+import StatusBadge from '@/components/StatusBadge';
+import PackageCard from '@/components/PackageCard';
 import { PickerAvatar } from '@/components/PickerAvatar';
 
 const statuses = ['All', 'Ongoing', 'Upcoming', 'Delivered', 'Delayed'];
@@ -139,21 +139,27 @@ export default function HomeScreen() {
           style={styles.packagesContainer}
         >
           <PackageCard 
-            title="Bag of Oranges Delivery"
-            location="45 Green Street to 123 Blue Avenue"
-            date="Tues Oct 15 2024"
-            pickerId={1}
-            status="progress"
-            imageUrl="https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg"
+            package={{
+              id: '1',
+              title: 'Bag of Oranges Delivery',
+              status: 'progress',
+              from: '45 Green Street',
+              to: '123 Blue Avenue',
+              created: '2024-10-15',
+            }}
+            onPress={() => {}}
           />
           
           <PackageCard 
-            title="Electronics Delivery"
-            location="17 Tech Road to 89 Circuit Street"
-            date="Wed Oct 16 2024"
-            pickerId={2}
-            status="pending"
-            imageUrl="https://images.pexels.com/photos/1779487/pexels-photo-1779487.jpeg"
+            package={{
+              id: '2',
+              title: 'Electronics Delivery',
+              status: 'pending',
+              from: '17 Tech Road',
+              to: '89 Circuit Street',
+              created: '2024-10-16',
+            }}
+            onPress={() => {}}
           />
         </Animated.View>
       </ScrollView>

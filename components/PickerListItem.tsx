@@ -1,121 +1,126 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Colors from '@/constants/Colors';
-import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
+import { spacing, fontSizes } from '@/constants/Layout';
+import { Star, Clock } from 'lucide-react-native';
+// import PickerAvatar from './PickerAvatar';
 import { PickerAvatar } from './PickerAvatar';
-import { StatusBadge } from './StatusBadge';
-import { MapPin } from 'lucide-react-native';
 
-interface Picker {
-  id: number;
-  name: string;
-  location: string;
-  rating: number;
-  deliveries: number;
-  available: boolean;
-}
+type PickerListItemProps = {
+  picker: {
+    id: string;
+    name: string;
+    rating: number;
+    reviews: number;
+    price: number;
+    avatar: string;
+    estimatedTime: string;
+  };
+  onSelect: () => void;
+};
 
-interface PickerListItemProps {
-  picker: Picker;
-  onPress?: () => void;
-}
-
-export function PickerListItem({ picker, onPress }: PickerListItemProps) {
+export default function PickerListItem({ picker, onSelect }: PickerListItemProps) {
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.7}
+    <Pressable 
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.pressed
+      ]}
+      onPress={onSelect}
     >
-      <PickerAvatar pickerId={picker.id} size={50} showBadge isAvailable={picker.available} />
-      
-      <View style={styles.infoContainer}>
-        <View style={styles.header}>
+      <View style={styles.header}>
+        <PickerAvatar
+          size={48}
+          uri={picker.avatar}
+        />
+        <View style={styles.info}>
           <Text style={styles.name}>{picker.name}</Text>
-          <StatusBadge status={picker.available ? 'available' : 'unavailable'} />
-        </View>
-        
-        <View style={styles.location}>
-          <MapPin size={12} color={Colors.gray[500]} />
-          <Text style={styles.locationText}>{picker.location}</Text>
-        </View>
-        
-        <View style={styles.stats}>
-          <Text style={styles.deliveries}>{picker.deliveries} Packages Delivered</Text>
-          <View style={styles.rating}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Text 
-                key={star} 
-                style={[styles.star, star <= Math.floor(picker.rating) ? styles.filledStar : null]}
-              >
-                ★
-              </Text>
-            ))}
-            <Text style={styles.ratingText}>{picker.rating}</Text>
+          <View style={styles.ratingContainer}>
+            <Star size={16} color={Colors.warning.DEFAULT} fill={Colors.warning.DEFAULT} />
+            <Text style={styles.rating}>
+              {typeof picker.rating === 'number' ? picker.rating.toFixed(1) : 'N/A'} ({picker.reviews})
+            </Text>
           </View>
         </View>
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>${typeof picker.rating === 'number' ? picker.rating.toFixed(1) : 'N/A'}</Text>
+        </View>
       </View>
-    </TouchableOpacity>
+
+      <View style={styles.footer}>
+        <View style={styles.estimatedTime}>
+          <Clock size={16} color={Colors.gray[500]} />
+          <Text style={styles.estimatedTimeText}>
+            Estimated delivery: {picker.estimatedTime}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
     backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  infoContainer: {
-    flex: 1,
-    marginLeft: spacing.md,
+  pressed: {
+    opacity: 0.7,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+  },
+  info: {
+    flex: 1,
+    marginLeft: spacing.md,
   },
   name: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: fontSizes.md,
     color: Colors.gray[800],
-  },
-  location: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: spacing.xs,
   },
-  locationText: {
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rating: {
     fontFamily: 'Poppins-Regular',
-    fontSize: fontSizes.xs,
+    fontSize: fontSizes.sm,
     color: Colors.gray[600],
     marginLeft: spacing.xs,
   },
-  stats: {
+  priceContainer: {
+    backgroundColor: Colors.primary[50],
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 12,
+  },
+  price: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: fontSizes.md,
+    color: Colors.primary.DEFAULT,
+  },
+  footer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[200],
+  },
+  estimatedTime: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  deliveries: {
+  estimatedTimeText: {
     fontFamily: 'Poppins-Regular',
-    fontSize: fontSizes.xs,
-    color: Colors.gray[600],
-  },
-  rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  star: {
-    fontSize: fontSizes.xs,
-    color: Colors.gray[300],
-  },
-  filledStar: {
-    color: Colors.warning.DEFAULT,
-  },
-  ratingText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: fontSizes.xs,
+    fontSize: fontSizes.sm,
     color: Colors.gray[600],
     marginLeft: spacing.xs,
   },

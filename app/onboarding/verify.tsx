@@ -7,10 +7,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { setOnboardingCompleted } from '@/store/authSlice';
+import { useTranslation } from 'react-i18next';
+import { RootState } from '@/store/store';
 
 export default function VerifyScreen() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+  const user = useSelector((state: RootState) => state.auth?.user ?? null);
   
   const handleOtpChange = (value: string, index: number) => {
     const newOtp = [...otp];
@@ -24,6 +31,7 @@ export default function VerifyScreen() {
   };
   
   const handleComplete = () => {
+    dispatch(setOnboardingCompleted(true));
     router.replace('/(tabs)');
   };
   
@@ -49,8 +57,10 @@ export default function VerifyScreen() {
           entering={FadeIn.duration(800).delay(300)}
           style={styles.headerContainer}
         >
-          <Text style={styles.title}>Verify Phone Number</Text>
-          <Text style={styles.subtitle}>Enter the verification code sent to +237 679 682 262</Text>
+          <Text style={styles.title}>{t('auth.verifyPhoneNumber')}</Text>
+          <Text style={styles.subtitle}>
+            {t('auth.enterVerificationCode')} {user?.phoneNumber ?? '+237 679 682 262'}
+          </Text>
         </Animated.View>
 
         <Animated.View 
@@ -78,7 +88,7 @@ export default function VerifyScreen() {
               onPress={goBack}
             >
               <ChevronLeft size={24} color={Colors.primary.DEFAULT} />
-              <Text style={styles.backButtonText}>BACK</Text>
+              <Text style={styles.backButtonText}>{t('common.back')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -86,7 +96,7 @@ export default function VerifyScreen() {
               onPress={handleComplete}
               disabled={!isComplete}
             >
-              <Text style={styles.doneButtonText}>DONE</Text>
+              <Text style={styles.doneButtonText}>{t('common.done')}</Text>
               <ChevronRight size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
