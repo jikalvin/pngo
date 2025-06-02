@@ -6,7 +6,7 @@ interface AuthState {
     id?: string;
     email?: string;
     phoneNumber?: string;
-    userType?: 'customer' | 'driver';
+    userType?: 'user' | 'picker';
   } | null;
   onboardingCompleted: boolean;
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +16,7 @@ export default function SignInScreen() {
   const [countryCode, setCountryCode] = useState('+237');
   const dispatch = useDispatch();
   const { t } = useTranslation();
+  const { userType } = useLocalSearchParams();
   
   const handleContinue = () => {
     // Dummy authentication - in a real app, this would make an API call
@@ -25,7 +26,7 @@ export default function SignInScreen() {
         id: '1',
         email: 'dummy@example.com',
         phoneNumber: `${countryCode}${phoneNumber}`,
-        userType: 'customer'
+        userType: userType as 'user' | 'picker'
       }));
       router.push('/onboarding/verify');
     }

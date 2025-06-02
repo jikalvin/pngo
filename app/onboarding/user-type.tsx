@@ -8,8 +8,13 @@ import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronRight } from 'lucide-react-native';
 
 export default function UserTypeScreen() {
-  const navigateToSignIn = () => {
-    router.push('/onboarding/sign-in');
+  const navigateToSignIn = (userType: 'user' | 'picker') => {
+    // Store the user type in the auth state or local storage
+    // This will be used later to determine which tabs to show
+    router.push({
+      pathname: '/onboarding/sign-in',
+      params: { userType }
+    });
   };
 
   return (
@@ -37,7 +42,7 @@ export default function UserTypeScreen() {
         >
           <TouchableOpacity
             style={styles.button}
-            onPress={navigateToSignIn}
+            onPress={() => navigateToSignIn('user')}
             activeOpacity={0.8}
           >
             <Text style={styles.buttonText}>Continue as User</Text>
@@ -48,7 +53,7 @@ export default function UserTypeScreen() {
 
           <TouchableOpacity
             style={styles.button}
-            onPress={navigateToSignIn}
+            onPress={() => navigateToSignIn('picker')}
             activeOpacity={0.8}
           >
             <Text style={styles.buttonText}>Continue as Picker</Text>

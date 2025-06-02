@@ -1,11 +1,16 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
-import { Package, Users, User, Home } from 'lucide-react-native';
+import { Package, Users, User, Home, Search } from 'lucide-react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 export default function TabLayout() {
+  const userType = useSelector((state: RootState) => state.auth.user?.userType);
+  const isPicker = userType === 'picker';
+
   return (
     <Tabs
       screenOptions={{
@@ -28,6 +33,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="search"
+        options={{
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabBarIcon focused={focused}>
+              <Search size={size} color={color} />
+            </TabBarIcon>
+          ),
+        }}
+        redirect={!isPicker}
+      />
+      <Tabs.Screen
         name="pickers"
         options={{
           tabBarIcon: ({ color, size, focused }) => (
@@ -36,6 +52,7 @@ export default function TabLayout() {
             </TabBarIcon>
           ),
         }}
+        redirect={isPicker}
       />
       <Tabs.Screen
         name="my-packages"
