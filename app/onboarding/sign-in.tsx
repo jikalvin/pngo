@@ -11,24 +11,60 @@ import { useDispatch } from 'react-redux';
 import { setAuthenticated, setUser } from '@/store/authSlice';
 import { useTranslation } from 'react-i18next';
 
+import { loginUser } from '@/utils/api'; // Assuming utils/api.js is aliased as @/utils/api
+import * as AuthStorage from '@/utils/authStorage'; // Assuming utils/authStorage.js is aliased
+
 export default function SignInScreen() {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+237');
+  const [username, setUsername] = useState(''); // Changed from phoneNumber
+  const [password, setPassword] = useState(''); // Added password field
+  const [error, setError] = useState('');
+  // const [countryCode, setCountryCode] = useState('+237'); // Keep if username is phone
   const dispatch = useDispatch();
   const { t } = useTranslation();
-  const { userType } = useLocalSearchParams();
+  const { userType: routeUserType } = useLocalSearchParams(); // userType from route params, if any
   
-  const handleContinue = () => {
-    // Dummy authentication - in a real app, this would make an API call
-    if (phoneNumber) {
-      dispatch(setAuthenticated(true));
-      dispatch(setUser({
-        id: '1',
-        email: 'dummy@example.com',
-        phoneNumber: `${countryCode}${phoneNumber}`,
-        userType: userType as 'user' | 'picker'
-      }));
-      router.push('/onboarding/verify');
+  const handleSignIn = async () => {
+    if (!username || !password) {
+      setError(t('auth.fillFields'));
+      return;
+    }
+    setError('');
+    try {
+      // The userType from routeUserType might be relevant if sign-in behavior differs by type,
+      // but login endpoint itself doesn't take userType. Role comes from backend.
+      const response = await loginUser(username, password); // API call
+      
+      if (response.token && response.user) {
+        await AuthStorage.storeToken(response.token);
+        await AuthStorage.storeUserData(response.user); // Store full user object {id, username, role}
+        
+        dispatch(setAuthenticated(true));
+        // Adapt the payload for existing setUser in authSlice
+        // Existing: { id, email, phoneNumber, userType }
+        // Backend: { id, username, role }
+        // We'll map 'role' to 'userType' and use 'username' for 'phoneNumber' or a new field.
+        dispatch(setUser({
+          id: response.user.id,
+          // email: response.user.email, // If email is returned and needed
+          username: response.user.username, // Or map to phoneNumber if that's what your slice expects
+          userType: response.user.role, // 'user' or 'driver' or 'admin'
+        }));
+        
+        // Navigate based on user type or to a general dashboard
+        // This part might need adjustment based on your app's navigation structure
+        if (response.user.role === 'driver') {
+          router.replace('/(picker)'); // Assuming a route group for pickers
+        } else if (response.user.role === 'user') {
+          router.replace('/(user)'); // Assuming a route group for users
+        } else {
+          router.replace('/'); // Default route or admin dashboard
+        }
+      } else {
+        setError(t('auth.invalidCredentials')); // Or use a more specific error from response if available
+      }
+    } catch (err: any) {
+      console.error("Sign-in error:", err);
+      setError(err.response?.data?.msg || err.message || t('auth.signInError'));
     }
   };
   
@@ -59,22 +95,36 @@ export default function SignInScreen() {
           entering={FadeIn.duration(800).delay(500)}
           style={styles.formContainer}
         >
-          <Text style={styles.label}>{t('common.phoneNumber')}</Text>
+          <Text style={styles.label}>{t('auth.usernameOrPhone')}</Text>
           <View style={styles.phoneInputContainer}>
-            <TouchableOpacity style={styles.countryCodeContainer}>
+            {/* <TouchableOpacity style={styles.countryCodeContainer}>
               <Text style={styles.countryCode}>{countryCode}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TextInput
-              style={styles.phoneInput}
-              placeholder={t('auth.enterPhoneNumber')}
+              style={styles.phoneInput} // Reuse style, or create new for username
+              placeholder={t('auth.enterUsername')} // Or 'Enter phone number as username'
               placeholderTextColor={Colors.gray[400]}
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              maxLength={15}
+              keyboardType="default" // Changed from phone-pad
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
+
+          <Text style={styles.label}>{t('auth.password')}</Text>
+          <View style={styles.phoneInputContainer}>
+            <TextInput
+              style={styles.phoneInput} // Reuse style, or create new for password
+              placeholder={t('auth.enterPassword')}
+              placeholderTextColor={Colors.gray[400]}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
             />
           </View>
           
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.backButton}
@@ -85,11 +135,11 @@ export default function SignInScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[styles.continueButton, (!phoneNumber && styles.disabledButton)]}
-              onPress={handleContinue}
-              disabled={!phoneNumber}
+              style={[styles.continueButton, ((!username || !password) && styles.disabledButton)]}
+              onPress={handleSignIn} // Changed from handleContinue
+              disabled={!username || !password}
             >
-              <Text style={styles.continueButtonText}>{t('common.continue')}</Text>
+              <Text style={styles.continueButtonText}>{t('auth.signInButton')}</Text>
               <ChevronRight size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
@@ -133,7 +183,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   formContainer: {
-    marginTop: '15%',
+    marginTop: '10%', // Adjusted margin
     alignItems: 'center',
   },
   label: {
@@ -146,7 +196,7 @@ const styles = StyleSheet.create({
   phoneInputContainer: {
     flexDirection: 'row',
     width: '100%',
-    marginBottom: spacing.xl * 2,
+    marginBottom: spacing.lg, // Adjusted margin
   },
   countryCodeContainer: {
     backgroundColor: Colors.primary[100],
@@ -204,10 +254,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: Colors.white,
     fontSize: fontSizes.sm,
-    marginRight: spacing.sm,
+    // marginRight: spacing.sm, // Removed if no icon
   },
   disabledButton: {
     backgroundColor: Colors.gray[400],
+  },
+  errorText: {
+    color: Colors.danger.DEFAULT,
+    fontFamily: 'Poppins-Regular',
+    fontSize: fontSizes.sm,
+    marginBottom: spacing.md,
+    textAlign: 'center',
   },
   emailContainer: {
     marginTop: spacing.xl * 2,

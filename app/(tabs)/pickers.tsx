@@ -4,62 +4,73 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Bell, Search, Filter } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { Bell, Search, Filter, AlertCircle } from 'lucide-react-native'; // Added AlertCircle
+import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
-import PickerListItem from '@/components/PickerListItem';
+// import PickerListItem from '@/components/PickerListItem'; // Will be replaced
+import PackageListItem, { PackageItemProps } from '@/components/PackageListItem'; // Import new component
+import api from '@/utils/api'; // Assuming default export from api.js
+import { useAuth } from '@/context/AuthContext'; // Or your Redux equivalent to get user role
+import { useFocusEffect } from 'expo-router';
 
-const pickers = [
-  { 
-    id: 1, 
-    name: 'Marcel Wankbuba', 
-    location: 'Bamenda, Cameroon',
-    rating: 4.4, 
-    deliveries: 23, 
-    available: true 
-  },
-  { 
-    id: 2, 
-    name: 'The Jedi', 
-    location: 'Bamenda, Cameroon',
-    rating: 4.4, 
-    deliveries: 25, 
-    available: true 
-  },
-  { 
-    id: 3, 
-    name: 'Rexon Pennyworth', 
-    location: 'Bamenda, Cameroon',
-    rating: 4.4, 
-    deliveries: 23, 
-    available: false 
-  },
-  { 
-    id: 4, 
-    name: 'Dora Finesta', 
-    location: 'Bamenda, Cameroon',
-    rating: 4.4, 
-    deliveries: 29, 
-    available: true 
-  },
-  { 
-    id: 5, 
-    name: 'Lespa Khingston', 
-    location: 'Bamenda, Cameroon',
-    rating: 4.4, 
-    deliveries: 23, 
-    available: true 
-  },
-  { 
-    id: 6, 
-    name: 'Marcel Wankbuba', 
-    location: 'Bamenda, Cameroon',
-    rating: 4.4, 
-    deliveries: 23, 
-    available: true 
-  },
-];
 
-export default function PickersScreen() {
+export default function AvailablePackagesScreen() { // Renamed screen
   const [searchText, setSearchText] = useState('');
+  const [packages, setPackages] = useState<PackageItemProps[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // const { user } = useAuth(); // Uncomment and use if you have useAuth() from AuthContext
+
+  // TODO: Add role check - this screen is for drivers
+  // if (user?.role !== 'driver') {
+  //   return (
+  //     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+  //       <View style={styles.centeredMessageContainer}>
+  //         <Text style={styles.errorText}>This section is for drivers only.</Text>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
+
+  const fetchAvailablePackages = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/packages/available');
+      setPackages(response.data || []);
+    } catch (err: any) {
+      console.error("Failed to fetch available packages:", err);
+      setError(err.response?.data?.msg || err.message || "An unexpected error occurred.");
+      setPackages([]); // Clear packages on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch on initial load and when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchAvailablePackages();
+    }, [])
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchAvailablePackages().then(() => setRefreshing(false));
+  }, []);
+  
+  // TODO: Implement search/filter logic if needed, or remove search UI
+  const filteredPackages = packages.filter(pkg => 
+    pkg.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    pkg.pickupAddress.toLowerCase().includes(searchText.toLowerCase()) ||
+    pkg.deliveryAddress.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -68,7 +79,7 @@ export default function PickersScreen() {
           entering={FadeIn.duration(800)}
           style={styles.title}
         >
-          Pickers
+          Available Packages
         </Animated.Text>
         <TouchableOpacity>
           <Bell color={Colors.primary.DEFAULT} size={24} />
@@ -82,32 +93,61 @@ export default function PickersScreen() {
         <Search size={20} color={Colors.gray[500]} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search..."
+          placeholder="Search packages (name, pickup, destination)..."
           placeholderTextColor={Colors.gray[400]}
           value={searchText}
           onChangeText={setSearchText}
         />
-        <TouchableOpacity>
+        {/* <TouchableOpacity>
           <Filter size={20} color={Colors.primary.DEFAULT} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </Animated.View>
 
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
-          entering={FadeInDown.duration(600).delay(300)}
-          style={styles.pickersContainer}
+      {isLoading && !refreshing && (
+        <View style={styles.centeredMessageContainer}>
+          <ActivityIndicator size="large" color={Colors.primary.DEFAULT} />
+          <Text style={styles.loadingText}>Loading packages...</Text>
+        </View>
+      )}
+
+      {error && !isLoading && (
+        <View style={styles.centeredMessageContainer}>
+          <AlertCircle size={40} color={Colors.danger.DEFAULT} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchAvailablePackages}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!isLoading && !error && filteredPackages.length === 0 && (
+        <View style={styles.centeredMessageContainer}>
+          <Text style={styles.noPackagesText}>No available packages found at the moment.</Text>
+          <Text style={styles.noPackagesSubText}>Check back later or pull to refresh.</Text>
+        </View>
+      )}
+
+      {!isLoading && !error && filteredPackages.length > 0 && (
+        <ScrollView 
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary.DEFAULT]}/>
+          }
         >
-          {pickers.map((picker, index) => (
-            <PickerListItem 
-              key={`${picker.id}-${index}`}
-              picker={picker}
-            />
-          ))}
-        </Animated.View>
-      </ScrollView>
+          <Animated.View
+            entering={FadeInDown.duration(600).delay(300)} // Consider removing if list is long
+            style={styles.packagesListContainer} // Renamed from pickersContainer
+          >
+            {filteredPackages.map((pkg) => ( // Use filteredPackages
+              <PackageListItem 
+                key={pkg.id} // Assuming API returns 'id', if it's '_id', adjust here and in component
+                item={pkg}
+              />
+            ))}
+          </Animated.View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -116,6 +156,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  centeredMessageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  errorText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: fontSizes.md,
+    color: Colors.danger.DEFAULT,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  loadingText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: fontSizes.md,
+    color: Colors.gray[600],
+    marginTop: spacing.md,
+  },
+  noPackagesText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: fontSizes.lg,
+    color: Colors.gray[700],
+    textAlign: 'center',
+  },
+  noPackagesSubText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: fontSizes.md,
+    color: Colors.gray[500],
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  retryButton: {
+    marginTop: spacing.lg,
+    backgroundColor: Colors.primary.DEFAULT,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  retryButtonText: {
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.white,
+    fontSize: fontSizes.md,
   },
   header: {
     flexDirection: 'row',
@@ -151,7 +235,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  pickersContainer: {
-    padding: spacing.md,
+  packagesListContainer: { // Renamed
+    paddingHorizontal: spacing.lg, // Use lg for consistency with search bar horizontal margin
+    paddingVertical: spacing.md,
   },
 });

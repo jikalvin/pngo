@@ -2,21 +2,15 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
 import { Package, MapPin } from 'lucide-react-native';
-import StatusBadge from './StatusBadge';
+import StatusBadge from './StatusBadge'; // Assuming StatusBadge can handle the new status enums
+import { PackageItemProps } from './PackageListItem'; // Reuse the interface
 
-type PackageCardProps = {
-  package: {
-    id: string;
-    title: string;
-    status: string;
-    from: string;
-    to: string;
-    created: string;
-  };
+interface Props { // Renamed from PackageCardProps for consistency
+  item: PackageItemProps; // Changed prop name from 'package' to 'item' and type to PackageItemProps
   onPress: () => void;
-};
+}
 
-export default function PackageCard({ package: pkg, onPress }: PackageCardProps) {
+export default function PackageCard({ item: pkg, onPress }: Props) { // item destructured as pkg
   return (
     <Pressable 
       style={({ pressed }) => [
@@ -29,30 +23,38 @@ export default function PackageCard({ package: pkg, onPress }: PackageCardProps)
         <View style={styles.iconContainer}>
           <Package size={24} color={Colors.primary.DEFAULT} />
         </View>
-        <Text style={styles.title}>{pkg.title}</Text>
+        <Text style={styles.title} numberOfLines={1}>{pkg.name}</Text> {/* Use name instead of title */}
         <StatusBadge status={pkg.status} />
       </View>
 
       <View style={styles.details}>
         <View style={styles.locationRow}>
-          <MapPin size={16} color={Colors.gray[500]} />
+          <MapPin size={16} color={Colors.gray[500]} style={styles.locationIcon}/>
           <Text style={styles.locationText} numberOfLines={1}>
-            From: {pkg.from}
+            From: {pkg.pickupAddress} {/* Use pickupAddress */}
           </Text>
         </View>
         <View style={styles.locationRow}>
-          <MapPin size={16} color={Colors.gray[500]} />
+          <MapPin size={16} color={Colors.gray[500]} style={styles.locationIcon}/>
           <Text style={styles.locationText} numberOfLines={1}>
-            To: {pkg.to}
+            To: {pkg.deliveryAddress} {/* Use deliveryAddress */}
           </Text>
         </View>
       </View>
 
-      <View style={styles.footer}>
+      {pkg.price !== undefined && pkg.price > 0 && (
+        <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>Offer:</Text>
+            <Text style={styles.priceText}>${pkg.price.toFixed(2)}</Text>
+        </View>
+      )}
+
+      {/* Assuming 'createdAt' field exists, if not, this part or 'pkg.createdAt' needs adjustment */}
+      {/* <View style={styles.footer}>
         <Text style={styles.date}>
-          Created: {new Date(pkg.created).toLocaleDateString()}
+          Created: {pkg.createdAt ? new Date(pkg.createdAt).toLocaleDateString() : 'N/A'}
         </Text>
-      </View>
+      </View> */}
     </Pressable>
   );
 }
@@ -91,6 +93,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     fontSize: fontSizes.md,
     color: Colors.gray[800],
+    marginLeft: spacing.sm, // Add some space if icon is not in its own container always
+  },
+  locationIcon: {
+    marginRight: spacing.xs,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[100],
+  },
+  priceLabel:{
+    fontFamily: 'Poppins-Regular',
+    fontSize: fontSizes.sm,
+    color: Colors.gray[600],
+    marginRight: spacing.xs,
+  },
+  priceText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: fontSizes.sm,
+    color: Colors.success.DEFAULT,
   },
   details: {
     marginBottom: spacing.md,
@@ -105,7 +130,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontSize: fontSizes.sm,
     color: Colors.gray[600],
-    marginLeft: spacing.xs,
+    // marginLeft: spacing.xs, // Icon has its own margin now
   },
   footer: {
     borderTopWidth: 1,

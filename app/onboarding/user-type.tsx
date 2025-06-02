@@ -8,11 +8,11 @@ import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronRight } from 'lucide-react-native';
 
 export default function UserTypeScreen() {
-  const navigateToSignIn = (userType: 'user' | 'picker') => {
-    // Store the user type in the auth state or local storage
-    // This will be used later to determine which tabs to show
+  const navigateToSignUp = (userType: 'user' | 'driver') => { // Changed 'picker' to 'driver' to match backend role
+    // The userType (role) will be passed to the sign-up screen
+    // to be included in the registration API call.
     router.push({
-      pathname: '/onboarding/sign-in',
+      pathname: '/onboarding/sign-up', // Navigate to sign-up instead of sign-in
       params: { userType }
     });
   };
@@ -42,7 +42,7 @@ export default function UserTypeScreen() {
         >
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigateToSignIn('user')}
+            onPress={() => navigateToSignUp('user')} // Call navigateToSignUp
             activeOpacity={0.8}
           >
             <Text style={styles.buttonText}>Continue as User</Text>
@@ -53,7 +53,7 @@ export default function UserTypeScreen() {
 
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigateToSignIn('picker')}
+            onPress={() => navigateToSignUp('driver')} // Call navigateToSignUp, use 'driver'
             activeOpacity={0.8}
           >
             <Text style={styles.buttonText}>Continue as Picker</Text>
