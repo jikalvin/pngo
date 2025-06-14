@@ -34,49 +34,63 @@ export default function RootLayout() {
     }
   }, []);
 
-  // Hide splash screen once fonts are loaded
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
+  // useEffect for hiding splash screen is now inside RootLayoutNav
+  // to coordinate with auth loading state.
+  // The direct call to SplashScreen.hideAsync() based only on fonts
+  // will be removed from RootLayout and handled in RootLayoutNav.
 
-  // Return null to keep splash screen visible while fonts load
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+  // This initial check for fonts is still useful to prevent RootLayoutNav from rendering
+  // prematurely if fonts are the only thing pending.
+   if (!fontsLoaded && !fontError) { // This check remains in RootLayout
+     return null;
+   }
 
   return (
     <Provider store={store}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <RootLayoutNav />
+        {/* Pass fontsLoaded and fontError as props to RootLayoutNav */}
+        <RootLayoutNav fontsLoaded={fontsLoaded} fontError={fontError} />
         <StatusBar style="auto" />
       </GestureHandlerRootView>
     </Provider>
   );
 }
 
-function RootLayoutNav() {
-  const auth = useSelector((state: RootState) => state.auth);
-  
-  // Add a loading state while the store is initializing
-  if (typeof auth === 'undefined') {
-    return null; // Or you could return a loading spinner here
-  }
+interface RootLayoutNavProps {
+  fontsLoaded: boolean;
+  fontError: any;
+}
 
-  // Now we can safely destructure since we know auth exists
-  const { isAuthenticated = false, onboardingCompleted = false } = auth;
+function RootLayoutNav({ fontsLoaded, fontError }: RootLayoutNavProps) {
+  const { isLoading, isAuthenticated, onboardingCompleted } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    // Hide splash screen only when both fonts are loaded/failed AND auth is no longer loading.
+    if ((fontsLoaded || fontError) && !isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError, isLoading]);
+
+  // If fonts are still loading OR auth state is still loading (initial token check),
+  // return null to keep the splash screen visible.
+  if (!fontsLoaded && !fontError || isLoading) {
+    return null;
+  }
   
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!isAuthenticated || !onboardingCompleted ? (
-        <Stack.Screen name="onboarding/index" options={{ animation: 'fade' }} />
+      {isAuthenticated ? (
+        onboardingCompleted ? (
+          <>
+            <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+            <Stack.Screen name="create" options={{ presentation: 'modal' }} />
+            {/* <Stack.Screen name="package" options={{ presentation: 'card' }} /> */}
+          </>
+        ) : (
+          <Stack.Screen name="onboarding/index" options={{ animation: 'fade' }} />
+        )
       ) : (
-        <>
-          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-          <Stack.Screen name="create" options={{ presentation: 'modal' }} />
-          {/* <Stack.Screen name="package" options={{ presentation: 'card' }} /> */}
-        </>
+        <Stack.Screen name="onboarding/index" options={{ animation: 'fade' }} />
       )}
       <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} />
     </Stack>
