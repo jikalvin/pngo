@@ -6,16 +6,18 @@ import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
 import { Package } from 'lucide-react-native';
 import PackageCard from '@/components/PackageCard';
-import { useState, useEffect } from 'react'; // Added hooks
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next'; // Added import
 import { useSelector } from 'react-redux'; // Added Redux
 import { RootState } from '@/store/store'; // Added Redux
 import { getFirestore, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // Added Firestore
 
 export default function MyPackagesScreen() {
   const router = useRouter();
+  const { t } = useTranslation(); // Initialized t
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.id;
-  const [tasks, setTasks] = useState<any[]>([]); // To store fetched tasks
+  const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
     if (!userId) {
@@ -64,7 +66,7 @@ export default function MyPackagesScreen() {
           entering={FadeIn.duration(800)}
           style={styles.title}
         >
-          My Packages
+          {t('myPackages.title')}
         </Animated.Text>
       </View>
       
@@ -80,8 +82,8 @@ export default function MyPackagesScreen() {
         <View style={styles.content}>
           <View style={styles.emptyState}>
             <Package color={Colors.gray[300]} size={64} />
-            <Text style={styles.emptyStateText}>No packages yet</Text>
-            <Text style={styles.emptyStateSubtext}>Your packages will appear here</Text>
+            <Text style={styles.emptyStateText}>{t('myPackages.emptyStateText')}</Text>
+            <Text style={styles.emptyStateSubtext}>{t('myPackages.emptyStateSubtext')}</Text>
           </View>
         </View>
       )}

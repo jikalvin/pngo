@@ -71,10 +71,10 @@ function AppContent() {
             dispatch(
               setUser({
                 id: firebaseUser.uid,
-                phoneNumber: firebaseUser.phoneNumber,
-                email: firebaseUser.email, // Keep this, might be null
+                email: firebaseUser.email, // Primary email from auth
                 userType: firestoreUserData.userType,
                 displayName: firestoreUserData.displayName,
+                phoneNumber: firestoreUserData.phoneNumber || null, // Default to null if not in Firestore
                 profileDescription: firestoreUserData.profileDescription,
                 // any other relevant fields from firestoreUserData
               })
@@ -87,9 +87,9 @@ function AppContent() {
             dispatch(
               setUser({ // Set with basic Firebase Auth info
                 id: firebaseUser.uid,
-                phoneNumber: firebaseUser.phoneNumber,
-                email: firebaseUser.email,
-                // userType, displayName, etc., will be undefined or null
+                email: firebaseUser.email, // Primary email from auth
+                phoneNumber: null, // Explicitly null for users without a profile / phone number
+                // userType, displayName, etc., will be undefined or null from Redux initial state
               })
             );
           }
@@ -100,8 +100,8 @@ function AppContent() {
           dispatch(
             setUser({ // Set with basic Firebase Auth info
               id: firebaseUser.uid,
-              phoneNumber: firebaseUser.phoneNumber,
-              email: firebaseUser.email,
+              email: firebaseUser.email, // Primary email from auth
+              phoneNumber: null, // Explicitly null
             })
           );
         }

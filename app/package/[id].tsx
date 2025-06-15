@@ -8,11 +8,13 @@ import StatusBadge from '@/components/StatusBadge';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, query, where, onSnapshot, writeBatch } from 'firebase/firestore'; // Added query, where, onSnapshot, writeBatch
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
+import { useTranslation } from 'react-i18next'; // Added import
 
 export default function PackageDetailsScreen() {
+  const { t } = useTranslation(); // Initialized t
   const { id: taskIdParam } = useLocalSearchParams<{ id: string }>();
-  const taskId = Array.isArray(taskIdParam) ? taskIdParam[0] : taskIdParam; // Ensure taskId is a string
+  const taskId = Array.isArray(taskIdParam) ? taskIdParam[0] : taskIdParam;
   const router = useRouter();
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
@@ -26,7 +28,7 @@ export default function PackageDetailsScreen() {
   useEffect(() => {
     if (!taskId) {
       setLoading(false);
-      Alert.alert("Error", "Task ID is missing.");
+      Alert.alert(t('packageDetails.errorTitle'), t('createTask.alertMissingLogin')); // Reusing a general key, or create specific
       return;
     }
     const db = getFirestore();
@@ -39,12 +41,12 @@ export default function PackageDetailsScreen() {
         if (docSnap.exists()) {
           setTask({ id: docSnap.id, ...docSnap.data() });
         } else {
-          Alert.alert("Error", "Task not found.");
-          setTask(null); // Ensure task is null if not found
+          Alert.alert(t('packageDetails.errorTitle'), t('packageDetails.taskNotFound'));
+          setTask(null);
         }
       } catch (error) {
         console.error("Error fetching task:", error);
-        Alert.alert("Error", "Failed to fetch task details.");
+        Alert.alert(t('packageDetails.errorTitle'), t('packageDetails.taskLoadError'));
       } finally {
         setLoading(false);
       }
@@ -167,10 +169,10 @@ export default function PackageDetailsScreen() {
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <ChevronLeft color={Colors.primary.DEFAULT} size={24} />
             </Pressable>
-            <Text style={styles.title}>Task Not Found</Text>
+            <Text style={styles.title}>{t('packageDetails.taskNotFound')}</Text>
           </View>
         <View style={styles.centered}>
-          <Text>Could not load task details.</Text>
+          <Text>{t('packageDetails.taskLoadError')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -185,55 +187,55 @@ export default function PackageDetailsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft color={Colors.primary.DEFAULT} size={24} />
         </Pressable>
-        <Text style={styles.title}>{task.deliveryName || `Task #${task.id.substring(0,4)}`}</Text>
+        <Text style={styles.title}>{task.deliveryName || `${t('packageDetails.headerFallbackPrefix')}${task.id.substring(0,4)}`}</Text>
         <StatusBadge status={task.status} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Package Details</Text>
+          <Text style={styles.sectionTitle}>{t('packageDetails.sectionPackageDetails')}</Text>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>From</Text>
+            <Text style={styles.label}>{t('packageDetails.labelFrom')}</Text>
             <Text style={styles.value}>{task.pickupAddress}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>To</Text>
+            <Text style={styles.label}>{t('packageDetails.labelTo')}</Text>
             <Text style={styles.value}>{task.dropoffAddress}</Text>
           </View>
           {task.description && (
             <View style={styles.detailRow}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>{t('packageDetails.labelDescription')}</Text>
               <Text style={styles.value}>{task.description}</Text>
             </View>
           )}
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Weight</Text>
-            <Text style={styles.value}>{task.weight || 'N/A'} kg</Text>
+            <Text style={styles.label}>{t('packageDetails.labelWeight')}</Text>
+            <Text style={styles.value}>{task.weight || t('packageDetails.labelNotAvailable')} {t('packageDetails.labelKgSuffix')}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Size</Text>
-            <Text style={styles.value}>{task.size || 'N/A'}</Text>
+            <Text style={styles.label}>{t('packageDetails.labelSize')}</Text>
+            <Text style={styles.value}>{task.size || t('packageDetails.labelNotAvailable')}</Text>
           </View>
            <View style={styles.detailRow}>
-            <Text style={styles.label}>Priority</Text>
-            <Text style={styles.value}>{task.priority || 'Standard'}</Text>
+            <Text style={styles.label}>{t('packageDetails.labelPriority')}</Text>
+            <Text style={styles.value}>{task.priority || t('common.notAvailable')}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Type</Text>
-            <Text style={styles.value}>{task.type || 'Standard'}</Text>
+            <Text style={styles.label}>{t('packageDetails.labelType')}</Text>
+            <Text style={styles.value}>{task.type || t('common.notAvailable')}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Price Range</Text>
+            <Text style={styles.label}>{t('packageDetails.labelPriceRange')}</Text>
             <Text style={styles.value}>{priceRange}</Text>
           </View>
            <View style={styles.detailRow}>
-            <Text style={styles.label}>Payment Methods</Text>
-            <Text style={styles.value}>{task.paymentMethods || 'N/A'}</Text>
+            <Text style={styles.label}>{t('packageDetails.labelPaymentMethods')}</Text>
+            <Text style={styles.value}>{task.paymentMethods || t('packageDetails.labelNotAvailable')}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.label}>Created At</Text>
+            <Text style={styles.label}>{t('packageDetails.labelCreatedAt')}</Text>
             <Text style={styles.value}>
-              {task.createdAt?.toDate ? task.createdAt.toDate().toLocaleString() : 'N/A'}
+              {task.createdAt?.toDate ? task.createdAt.toDate().toLocaleString() : t('packageDetails.labelNotAvailable')}
             </Text>
           </View>
         </View>
@@ -241,10 +243,10 @@ export default function PackageDetailsScreen() {
         {/* Bidding Section for Pickers */}
         {currentUser?.userType === 'picker' && task?.status === 'open' && (
           <View style={styles.biddingSection}>
-            <Text style={styles.sectionTitle}>Place Your Bid</Text>
+            <Text style={styles.sectionTitle}>{t('packageDetails.sectionPlaceBid')}</Text>
             <TextInput
               style={styles.bidInput}
-              placeholder="Enter your bid amount"
+              placeholder={t('packageDetails.bidAmountPlaceholder')}
               keyboardType="numeric"
               value={bidAmount}
               onChangeText={setBidAmount}
@@ -255,29 +257,7 @@ export default function PackageDetailsScreen() {
               onPress={handleSubmitBid}
               disabled={isBidPlaced || !bidAmount}
             >
-              <Text style={styles.actionButtonText}>{isBidPlaced ? "Bid Placed" : "Submit Bid"}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Bidding Section for Pickers - remains unchanged */}
-        {currentUser?.userType === 'picker' && task?.status === 'open' && (
-          <View style={styles.biddingSection}>
-            <Text style={styles.sectionTitle}>Place Your Bid</Text>
-            <TextInput
-              style={styles.bidInput}
-              placeholder="Enter your bid amount"
-              keyboardType="numeric"
-              value={bidAmount}
-              onChangeText={setBidAmount}
-              editable={!isBidPlaced}
-            />
-            <TouchableOpacity
-              style={[styles.actionButton, styles.primaryButton, isBidPlaced && styles.disabledButton]}
-              onPress={handleSubmitBid}
-              disabled={isBidPlaced || !bidAmount}
-            >
-              <Text style={styles.actionButtonText}>{isBidPlaced ? "Bid Placed" : "Submit Bid"}</Text>
+              <Text style={styles.actionButtonText}>{isBidPlaced ? t('packageDetails.bidPlacedButton') : t('packageDetails.submitBidButton')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -285,21 +265,21 @@ export default function PackageDetailsScreen() {
         {/* Bids Display for Task Creator */}
         {currentUser?.id === task?.userId && task?.status === 'open' && bids.length > 0 && (
           <View style={styles.bidsListSection}>
-            <Text style={styles.sectionTitle}>Bids Received</Text>
+            <Text style={styles.sectionTitle}>{t('packageDetails.sectionBidsReceived')}</Text>
             {bids.map((bid) => (
               <View key={bid.id} style={styles.bidItem}>
                 <View style={styles.bidInfo}>
-                  <Text style={styles.bidderName}>{bid.pickerName || `Picker ID: ${bid.pickerId.substring(0,6)}`}</Text>
-                  <Text style={styles.bidAmountText}>Amount: ${bid.bidAmount?.toFixed(2)}</Text>
+                  <Text style={styles.bidderName}>{bid.pickerName || `${t('packageDetails.labelBidderNamePrefix')}${bid.pickerId.substring(0,6)}`}</Text>
+                  <Text style={styles.bidAmountText}>{`${t('packageDetails.labelBidAmountPrefix')}${bid.bidAmount?.toFixed(2)}`}</Text>
                   <Text style={styles.bidTimestamp}>
-                    Placed: {bid.bidAt?.toDate ? bid.bidAt.toDate().toLocaleTimeString() : 'N/A'}
+                    {t('packageDetails.labelBidTimestampPrefix')}{bid.bidAt?.toDate ? bid.bidAt.toDate().toLocaleTimeString() : t('packageDetails.labelNotAvailable')}
                   </Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.acceptButton]}
                   onPress={() => handleAcceptBid(bid)}
                 >
-                  <Text style={styles.acceptButtonText}>Accept Bid</Text>
+                  <Text style={styles.acceptButtonText}>{t('packageDetails.acceptBidButton')}</Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -308,8 +288,8 @@ export default function PackageDetailsScreen() {
 
         {currentUser?.id === task?.userId && task?.status === 'open' && bids.length === 0 && (
            <View style={styles.bidsListSection}>
-            <Text style={styles.sectionTitle}>Bids Received</Text>
-            <Text style={styles.noBidsText}>No active bids yet for this task.</Text>
+            <Text style={styles.sectionTitle}>{t('packageDetails.sectionBidsReceived')}</Text>
+            <Text style={styles.noBidsText}>{t('packageDetails.noActiveBids')}</Text>
           </View>
         )}
 
@@ -322,7 +302,7 @@ export default function PackageDetailsScreen() {
               style={[styles.actionButton, styles.primaryButton]}
               onPress={() => router.push(`/package/${taskId}/pickers`)}
             >
-              <Text style={styles.actionButtonText}>View Assigned Picker / All Bids</Text>
+              <Text style={styles.actionButtonText}>{t('packageDetails.viewAssignedPickerButton')}</Text>
             </Pressable>
           </View>
         )}
@@ -335,7 +315,7 @@ export default function PackageDetailsScreen() {
               onPress={() => router.push(`/package/${taskId}/chat`)} // Use taskId
             >
               <MessageCircle color={Colors.primary.DEFAULT} size={20} />
-              <Text style={styles.secondaryButtonText}>Chat</Text>
+              <Text style={styles.secondaryButtonText}>{t('packageDetails.chatButton')}</Text>
             </Pressable>
             
             <Pressable 
@@ -343,7 +323,7 @@ export default function PackageDetailsScreen() {
               onPress={() => router.push(`/package/${id}/track`)}
             >
               <MapPin color={Colors.primary.DEFAULT} size={20} />
-              <Text style={styles.secondaryButtonText}>Track</Text>
+              <Text style={styles.secondaryButtonText}>{t('packageDetails.trackButton')}</Text>
             </Pressable>
           </View>
         </View>

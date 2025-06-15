@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-// Assuming firebaseConfig.ts exports the config object directly, not an initialized app.
-// We get auth from getAuth()
-import firebaseConfig from '../../firebaseConfig'; // Adjusted path based on file location
-import { setConfirmationResult } from '../../store/tempAuthStore'; // Added import
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore'; // Added Firestore imports
+import { useDispatch } from 'react-redux'; // Added Redux dispatch
+import { setOnboardingCompleted } from '../../store/authSlice'; // Added Redux action
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
@@ -14,93 +13,88 @@ import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
-// Initialize Firebase Auth
-const auth = getAuth();
-
+// Initialize Firebase Auth - getAuth() can be called as needed, not necessarily globally here.
 export default function SignInScreen() {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+237');
-  // const [confirmation, setConfirmation] = useState<any>(null); // Removed state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(true);
   const { t } = useTranslation();
-  const { userType } = useLocalSearchParams();
-  const recaptchaVerifierRef = useRef<any>(null);
-  const recaptchaContainerRef = useRef<any>(null); // Ref for the View
+  const { userType: userTypeParam } = useLocalSearchParams(); // Renamed for clarity
+  const dispatch = useDispatch(); // Initialize dispatch
 
-  useEffect(() => {
-    // Ensure firebaseConfig is initialized before this runs if needed by getAuth()
-    // For client-side SDK, getAuth() usually handles initialization if Firebase app is initialized.
-    if (!recaptchaVerifierRef.current && recaptchaContainerRef.current) {
-      // The 'recaptcha-container' div ID is expected by RecaptchaVerifier.
-      // In React Native, this is tricky. We are assigning a ref to a View.
-      // This standard web RecaptchaVerifier might not work directly.
-      // Expo offers FirebaseRecaptchaVerifierModal for a more RN-idiomatic approach.
-      // For this task, we follow the instruction using the web verifier.
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,
-          recaptchaContainerRef.current, // Giving the View node. This is the problematic part.
-          {
-            size: 'invisible',
-            callback: (response: any) => {
-              // reCAPTCHA solved, allow signInWithPhoneNumber.
-              // console.log("reCAPTCHA solved:", response);
-            },
-            'expired-callback': () => {
-              // Response expired. Ask user to solve reCAPTCHA again.
-              // console.log("reCAPTCHA expired");
-            },
-          }
-        );
-        recaptchaVerifierRef.current = window.recaptchaVerifier;
-        // It's common to render the verifier initially if it's not 'invisible'
-        // For 'invisible', it triggers when needed.
-        // recaptchaVerifierRef.current.render().catch(console.error);
-      } catch (error) {
-        console.error("Error initializing RecaptchaVerifier:", error);
-        Alert.alert("Error", "Failed to initialize reCAPTCHA verifier.");
-      }
+  const handleAuthentication = async () => {
+    if (isSignUp) {
+      await handleSignUp();
+    } else {
+      await handleSignIn();
     }
-    // Cleanup on unmount if necessary, though RecaptchaVerifier might handle its own cleanup.
-    return () => {
-      // if (recaptchaVerifierRef.current) {
-      //   recaptchaVerifierRef.current.clear(); // Example cleanup
-      // }
-    };
-  }, [auth]); // Add auth to dependency array
+  };
 
-  const handleContinue = async () => {
-    if (!phoneNumber) {
-      Alert.alert(t('auth.enterPhoneNumber'));
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      Alert.alert(t('auth.alertAuthErrorTitle'), t('auth.alertValidationEmailPassword'));
       return;
     }
-    if (!recaptchaVerifierRef.current) {
-      Alert.alert("Error", "reCAPTCHA verifier not initialized.");
-      return;
-    }
-
-    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+    const auth = getAuth();
     try {
-      const confirmationResult = await signInWithPhoneNumber(
-        auth,
-        fullPhoneNumber,
-        recaptchaVerifierRef.current
-      );
-      setConfirmationResult(confirmationResult); // Use imported setter
-      // Navigate to verify screen, pass phone number and user type
-      // confirmationResult itself is complex and not easily passable via params.
-      // The verify screen will need to use this confirmationResult.
-      // For now, we store it in state; the verify screen will need a way to access it.
-      // This will be handled in the next subtask for verify.tsx.
-      router.push({
-        pathname: '/onboarding/verify',
-        params: { userType: userType as string, phoneNumber: fullPhoneNumber },
-      });
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      console.log('Sign Up Successful (Firebase Auth):', firebaseUser);
+
+      const userType = Array.isArray(userTypeParam) ? userTypeParam[0] : userTypeParam;
+
+      if (!userType) {
+        console.error("User role not specified. Cannot complete registration.");
+        Alert.alert(t('auth.alertAuthErrorTitle'), t('auth.alertUserRoleMissing'));
+        // Consider deleting firebaseUser here if profile creation is critical path
+        // await firebaseUser.delete();
+        return;
+      }
+
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      const userProfileData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        userType: userType,
+        createdAt: serverTimestamp(),
+        displayName: firebaseUser.email?.split('@')[0] || 'New User', // Default display name
+        profileDescription: null,
+        phoneNumber: null,
+      };
+
+      try {
+        await setDoc(userDocRef, userProfileData);
+        console.log("User profile created in Firestore for UID:", firebaseUser.uid);
+
+        dispatch(setOnboardingCompleted(true));
+        Alert.alert(t('auth.alertSignUpSuccessTitle'), t('auth.alertSignUpSuccessMessage'));
+        router.replace('/(tabs)');
+
+      } catch (firestoreError: any) {
+        console.error("Error creating user profile in Firestore:", firestoreError);
+        Alert.alert(t('auth.alertAuthErrorTitle'), firestoreError.message || "Failed to set up your profile. Please try again or contact support.");
+      }
+
     } catch (error: any) {
-      console.error('Firebase Phone Auth Error:', error);
-      Alert.alert(t('common.error'), error.message || t('auth.phoneSignInError'));
-      // It's good practice to reset the reCAPTCHA verifier on error if needed
-      // grecaptcha.reset(window.recaptchaWidgetId); or similar for web
-      // For invisible, it might reset automatically or need specific handling.
+      Alert.alert(t('auth.alertAuthErrorTitle'), error.message);
+      console.error('Firebase Auth Sign Up Error:', error);
+    }
+  };
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert(t('auth.alertAuthErrorTitle'), t('auth.alertValidationEmailPassword'));
+      return;
+    }
+    const auth = getAuth();
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Sign In Successful:', userCredential.user);
+      Alert.alert(t('auth.alertSignInSuccessTitle'), t('auth.alertSignInSuccessMessage'));
+    } catch (error: any) {
+      Alert.alert(t('auth.alertAuthErrorTitle'), error.message);
+      console.error('Sign In Error:', error);
     }
   };
   
@@ -124,33 +118,35 @@ export default function SignInScreen() {
           entering={FadeIn.duration(800).delay(300)}
           style={styles.headerContainer}
         >
-          <Text style={styles.title}>{t('auth.signInTitle')}</Text>
+          <Text style={styles.title}>{isSignUp ? t('auth.signUpTitle') : t('auth.signInTitle')}</Text>
         </Animated.View>
 
         <Animated.View 
           entering={FadeIn.duration(800).delay(500)}
           style={styles.formContainer}
         >
-          {/* This View is a placeholder for the reCAPTCHA verifier.
-              It might need to be a WebView or use a specific Expo component
-              for Firebase reCAPTCHA to work correctly in React Native.
-              Using testID as 'id' is a workaround assumption.
-              It should be styled to be invisible or correctly overlayed if visible. */}
-          <View testID="recaptcha-container" ref={recaptchaContainerRef} style={styles.recaptchaPlaceholder} />
-
-          <Text style={styles.label}>{t('common.phoneNumber')}</Text>
-          <View style={styles.phoneInputContainer}>
-            <TouchableOpacity style={styles.countryCodeContainer}>
-              <Text style={styles.countryCode}>{countryCode}</Text>
-            </TouchableOpacity>
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.label}>{t('common.email')}</Text>
             <TextInput
-              style={styles.phoneInput}
-              placeholder={t('auth.enterPhoneNumber')}
+              style={styles.input}
+              placeholder={t('auth.emailPlaceholder')}
               placeholderTextColor={Colors.gray[400]}
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              maxLength={15}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.inputFieldContainer}>
+            <Text style={styles.label}>{t('common.password')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t('auth.passwordPlaceholder')}
+              placeholderTextColor={Colors.gray[400]}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={true}
             />
           </View>
           
@@ -164,17 +160,21 @@ export default function SignInScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[styles.continueButton, (!phoneNumber && styles.disabledButton)]}
-              onPress={handleContinue}
-              disabled={!phoneNumber}
+              style={styles.authButton}
+              onPress={handleAuthentication}
             >
-              <Text style={styles.continueButtonText}>{t('common.continue')}</Text>
+              <Text style={styles.authButtonText}>
+                {isSignUp ? t('auth.signUpButton') : t('auth.signInButton')}
+              </Text>
               <ChevronRight size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
           
-          <TouchableOpacity style={styles.emailContainer}>
-            <Text style={styles.emailText}>{t('auth.useEmail')}</Text>
+          <TouchableOpacity style={styles.toggleAuthModeButton} onPress={() => setIsSignUp(!isSignUp)}>
+            <Text style={styles.toggleAuthModeText}>
+              {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
+              {isSignUp ? t('auth.signInButton') : t('auth.signUpButton')}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>
@@ -187,13 +187,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.black,
   },
-  recaptchaPlaceholder: {
-    // Assuming 'invisible' reCAPTCHA, this might not need explicit styling
-    // or could be { width: 0, height: 0, position: 'absolute' }
-    // If it's a visible one, it would need actual dimensions.
-    width: 0,
-    height: 0,
-  },
+  // recaptchaPlaceholder style removed
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
@@ -227,28 +221,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     fontSize: fontSizes.sm,
     color: Colors.primary.DEFAULT,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs, // Reduced margin for tighter layout
   },
-  phoneInputContainer: {
-    flexDirection: 'row',
+  inputFieldContainer: { // New container for label + input
     width: '100%',
-    marginBottom: spacing.xl * 2,
+    marginBottom: spacing.md, // Spacing between email and password fields
   },
-  countryCodeContainer: {
-    backgroundColor: Colors.primary[100],
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-  },
-  countryCode: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: fontSizes.md,
-    color: Colors.gray[800],
-  },
-  phoneInput: {
-    flex: 1,
+  input: { // Style for new TextInputs
     backgroundColor: Colors.primary[100],
     borderRadius: 8,
     paddingHorizontal: spacing.md,
@@ -256,6 +235,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     fontSize: fontSizes.md,
     color: Colors.gray[800],
+    width: '100%',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -277,7 +257,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: Colors.primary.DEFAULT,
   },
-  continueButton: {
+  authButton: { // Renamed from continueButton
     flexDirection: 'row',
     backgroundColor: Colors.primary.DEFAULT,
     paddingVertical: spacing.sm,
@@ -286,26 +266,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  continueButtonText: {
+  authButtonText: { // Renamed from continueButtonText
     fontFamily: 'Poppins-SemiBold',
     color: Colors.white,
     fontSize: fontSizes.sm,
     marginRight: spacing.sm,
   },
+  // disabledButton style can be kept if needed for authButton
   disabledButton: {
     backgroundColor: Colors.gray[400],
   },
-  emailContainer: {
-    marginTop: spacing.xl * 2,
-    borderWidth: 1,
-    borderColor: Colors.primary.DEFAULT,
+  toggleAuthModeButton: { // Renamed from emailContainer
+    marginTop: spacing.lg, // Adjusted margin
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 8,
   },
-  emailText: {
+  toggleAuthModeText: { // Renamed from emailText
     fontFamily: 'Poppins-Medium',
     color: Colors.primary.DEFAULT,
     fontSize: fontSizes.sm,
+    textAlign: 'center',
   },
 });

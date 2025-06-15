@@ -6,8 +6,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronRight } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next'; // Added import
 
 export default function UserTypeScreen() {
+  const { t } = useTranslation(); // Initialized t
+
   const navigateToSignIn = (userType: 'user' | 'picker') => {
     // Store the user type in the auth state or local storage
     // This will be used later to determine which tabs to show
@@ -33,7 +36,7 @@ export default function UserTypeScreen() {
           entering={FadeIn.duration(800).delay(300)}
           style={styles.titleContainer}
         >
-          <Text style={styles.title}>How would you like to use the app?</Text>
+          <Text style={styles.title}>{t('onboarding.userTypePrompt')}</Text>
         </Animated.View>
 
         <Animated.View 
@@ -45,9 +48,9 @@ export default function UserTypeScreen() {
             onPress={() => navigateToSignIn('user')}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Continue as User</Text>
+            <Text style={styles.buttonText}>{t('onboarding.continueAsUser')}</Text>
             <View style={styles.buttonDescription}>
-              <Text style={styles.buttonDescriptionText}>I want to send or receive packages</Text>
+              <Text style={styles.buttonDescriptionText}>{t('onboarding.userDescription')}</Text>
             </View>
           </TouchableOpacity>
 
@@ -56,19 +59,20 @@ export default function UserTypeScreen() {
             onPress={() => navigateToSignIn('picker')}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Continue as Picker</Text>
+            <Text style={styles.buttonText}>{t('onboarding.continueAsPicker')}</Text>
             <View style={styles.buttonDescription}>
-              <Text style={styles.buttonDescriptionText}>I want to deliver packages and earn</Text>
+              <Text style={styles.buttonDescriptionText}>{t('onboarding.pickerDescription')}</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.helpContainer}>
-            <Text style={styles.helpText}>Need help? Contact Support</Text>
+            <Text style={styles.helpText}>{t('common.needHelp')}</Text>
           </TouchableOpacity>
 
           <View style={styles.languageContainer}>
             <TouchableOpacity style={styles.languageButton}>
-              <Text style={styles.languageButtonText}>ENGLISH</Text>
+              {/* Assuming a language switcher might be more complex, for now, hardcoding or using a specific key */}
+              <Text style={styles.languageButtonText}>{t('common.languageEnglish')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

@@ -3,6 +3,7 @@ import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
 import { Package, MapPin } from 'lucide-react-native';
 import StatusBadge from './StatusBadge';
+import { useTranslation } from 'react-i18next'; // Added import
 
 type PackageCardProps = {
   package: {
@@ -17,6 +18,8 @@ type PackageCardProps = {
 };
 
 export default function PackageCard({ package: pkg, onPress }: PackageCardProps) {
+  const { t } = useTranslation(); // Initialized t
+
   return (
     <Pressable 
       style={({ pressed }) => [
@@ -37,20 +40,20 @@ export default function PackageCard({ package: pkg, onPress }: PackageCardProps)
         <View style={styles.locationRow}>
           <MapPin size={16} color={Colors.gray[500]} />
           <Text style={styles.locationText} numberOfLines={1}>
-            From: {pkg.from}
+            {t('packageCard.fromPrefix')}{pkg.from}
           </Text>
         </View>
         <View style={styles.locationRow}>
           <MapPin size={16} color={Colors.gray[500]} />
           <Text style={styles.locationText} numberOfLines={1}>
-            To: {pkg.to}
+            {t('packageCard.toPrefix')}{pkg.to}
           </Text>
         </View>
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.date}>
-          Created: {new Date(pkg.created).toLocaleDateString()}
+          {t('packageCard.createdPrefix')}{new Date(pkg.created).toLocaleDateString()}
         </Text>
       </View>
     </Pressable>

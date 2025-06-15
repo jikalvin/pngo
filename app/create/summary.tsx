@@ -8,8 +8,10 @@ import { RootState } from '@/store/store'; // Added Redux
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
 import { ProgressSteps } from '@/components/ProgressSteps';
+import { useTranslation } from 'react-i18next'; // Added import
 
 export default function DeliverySummaryScreen() {
+  const { t } = useTranslation(); // Initialized t
   const params = useLocalSearchParams();
   const { user } = useSelector((state: RootState) => state.auth);
   const userId = user?.id;
@@ -47,7 +49,7 @@ export default function DeliverySummaryScreen() {
   
   const handleCreate = async () => {
     if (!userId) {
-      Alert.alert("Error", "You must be logged in to create a task.");
+      Alert.alert(t('common.error'), t('createTask.alertMissingLogin'));
       return;
     }
 
@@ -74,11 +76,11 @@ export default function DeliverySummaryScreen() {
 
     try {
       await addDoc(collection(db, 'tasks'), taskData);
-      Alert.alert("Success", "Task created successfully!");
+      Alert.alert(t('createTask.alertCreateSuccessTitle'), t('createTask.alertCreateSuccessMessage'));
       router.replace('/(tabs)/my-packages');
     } catch (error) {
       console.error("Error creating task:", error);
-      Alert.alert("Error", "Failed to create task. Please try again.");
+      Alert.alert(t('createTask.alertCreateErrorTitle'), t('createTask.alertCreateErrorMessage'));
     }
   };
 
@@ -88,7 +90,7 @@ export default function DeliverySummaryScreen() {
         <TouchableOpacity onPress={handleBack}>
           <ChevronLeft size={24} color={Colors.primary.DEFAULT} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Delivery</Text>
+        <Text style={styles.headerTitle}>{t('createTask.headerTitle')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
@@ -103,7 +105,7 @@ export default function DeliverySummaryScreen() {
             />
           ) : (
             <View style={[styles.mainImage, styles.placeholderImage]}>
-              <Text>No Image</Text>
+              <Text>{t('createTask.summaryNoImage')}</Text>
             </View>
           )}
           <View style={styles.thumbnailsContainer}>
@@ -119,19 +121,19 @@ export default function DeliverySummaryScreen() {
         
         <View style={styles.detailsContainer}>
           <Text style={styles.deliveryTitle}>{deliveryName as string}</Text>
-          <Text style={styles.deliveryInfo}>Size: {size as string}</Text>
-          <Text style={styles.deliveryInfo}>Weight: ~{weight as string} kg</Text>
+          <Text style={styles.deliveryInfo}>{t('createTask.summarySizeLabel')}: {size as string}</Text>
+          <Text style={styles.deliveryInfo}>{t('createTask.summaryWeightLabel')}: ~{weight as string} {t('createTask.summaryKgSuffix')}</Text>
           {/* <Text style={styles.deliveryDescription}>Description here if available</Text> */}
           
           <View style={styles.tagContainer}>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>Priority: {priority as string}</Text>
+              <Text style={styles.tagText}>{t('createTask.summaryPriorityLabel')}: {priority as string}</Text>
             </View>
           </View>
           
           <View style={styles.tagContainer}>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>Type: {type as string}</Text>
+              <Text style={styles.tagText}>{t('createTask.summaryTypeLabel')}: {type as string}</Text>
             </View>
           </View>
           
@@ -142,20 +144,20 @@ export default function DeliverySummaryScreen() {
           </View> */}
           
           <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Price: ${minAmount as string} - ${maxAmount as string}</Text>
+            <Text style={styles.priceLabel}>{t('createTask.summaryPriceLabel')}: ${minAmount as string} - ${maxAmount as string}</Text>
           </View>
           
           <View style={styles.addressContainer}>
             <MapPin size={16} color={Colors.primary.DEFAULT} />
-            <Text style={styles.addressText}>{pickupAddress as string} to {dropoffAddress as string}</Text>
+            <Text style={styles.addressText}>{pickupAddress as string} {t('createTask.summaryAddressJoiner')} {dropoffAddress as string}</Text>
             {/* <TouchableOpacity>
               <Text style={styles.changeText}>change</Text>
             </TouchableOpacity> */}
           </View>
           
           <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>Pickup Date: {date as string} at {time as string}</Text>
-            <Text style={styles.timeText}>Payment Methods: {paymentMethods as string}</Text>
+            <Text style={styles.timeText}>{t('createTask.summaryPickupDateLabel')}: {date as string} {t('createTask.summaryAtConnector')} {time as string}</Text>
+            <Text style={styles.timeText}>{t('createTask.summaryPaymentMethodsLabel')}: {paymentMethods as string}</Text>
           </View>
         </View>
       </ScrollView>
@@ -165,14 +167,14 @@ export default function DeliverySummaryScreen() {
           style={styles.backButton}
           onPress={handleBack}
         >
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>{t('common.back')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.createButton}
           onPress={handleCreate}
         >
-          <Text style={styles.createButtonText}>Create</Text>
+          <Text style={styles.createButtonText}>{t('createTask.createButton')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -36,8 +36,8 @@ export default function ProfileScreen() {
             style={styles.profileImage}
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>{currentUser?.displayName || 'N/A'}</Text>
-            <Text style={styles.description}>{currentUser?.profileDescription || 'N/A'}</Text>
+            <Text style={styles.name}>{currentUser?.displayName || t('profile.notAvailable')}</Text>
+            <Text style={styles.description}>{currentUser?.profileDescription || t('profile.notAvailable')}</Text>
           </View>
         </Animated.View>
 

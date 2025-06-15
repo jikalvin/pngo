@@ -2,8 +2,9 @@ import { View, Text, StyleSheet, FlatList } from 'react-native'; // Changed Scro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
-import { Search as SearchIcon, Package } from 'lucide-react-native'; // Renamed Search to SearchIcon, added Package for empty state
+import { Search as SearchIcon, Package } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next'; // Added import
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { getFirestore, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
@@ -12,6 +13,7 @@ import { useRouter } from 'expo-router';
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { t } = useTranslation(); // Initialized t
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const [openTasks, setOpenTasks] = useState<any[]>([]);
 
@@ -69,7 +71,7 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Available Tasks</Text>
+        <Text style={styles.title}>{t('search.title')}</Text>
         <SearchIcon color={Colors.primary.DEFAULT} size={24} />
       </View>
       
@@ -84,7 +86,7 @@ export default function SearchScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Package color={Colors.gray[300]} size={64} />
-          <Text style={styles.emptyText}>No open tasks available at the moment.</Text>
+          <Text style={styles.emptyText}>{t('search.emptyStateText')}</Text>
         </View>
       )}
     </SafeAreaView>

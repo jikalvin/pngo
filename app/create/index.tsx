@@ -7,8 +7,10 @@ import { ChevronLeft, Camera, Upload, Plus } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
 import { ProgressSteps } from '@/components/ProgressSteps';
+import { useTranslation } from 'react-i18next'; // Added import
 
 export default function CreateDeliveryScreen() {
+  const { t } = useTranslation(); // Initialized t
   const [images, setImages] = useState<string[]>([]);
   const [deliveryName, setDeliveryName] = useState('');
   const [size, setSize] = useState('');
@@ -57,7 +59,7 @@ export default function CreateDeliveryScreen() {
         <TouchableOpacity onPress={handleCancel}>
           <ChevronLeft size={24} color={Colors.primary.DEFAULT} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Delivery</Text>
+        <Text style={styles.headerTitle}>{t('createTask.headerTitle')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
@@ -115,21 +117,21 @@ export default function CreateDeliveryScreen() {
           
           <View style={styles.uploadButtons}>
             <TouchableOpacity style={styles.uploadButton}>
-              <Text style={styles.uploadButtonText}>Upload a video (1min max)</Text>
+              <Text style={styles.uploadButtonText}>{t('createTask.uploadVideoHint')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.uploadImagesButton}>
-              <Text style={styles.uploadImagesButtonText}>Upload up to 4 images</Text>
+              <Text style={styles.uploadImagesButtonText}>{t('createTask.uploadImagesHint')}</Text>
             </TouchableOpacity>
           </View>
         </View>
         
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Delivery name</Text>
+            <Text style={styles.label}>{t('createTask.deliveryNameLabel')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter delivery name"
+              placeholder={t('createTask.deliveryNamePlaceholder')}
               placeholderTextColor={Colors.gray[400]}
               value={deliveryName}
               onChangeText={setDeliveryName}
@@ -137,18 +139,18 @@ export default function CreateDeliveryScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Size estimate</Text>
+            <Text style={styles.label}>{t('createTask.sizeEstimateLabel')}</Text>
             <TouchableOpacity style={styles.dropdown}>
-              <Text style={styles.dropdownText}>Size & Moto</Text>
+              <Text style={styles.dropdownText}>{t('createTask.sizeEstimatePlaceholder')}</Text>
               <ChevronLeft size={20} color={Colors.gray[600]} style={{ transform: [{ rotate: '-90deg' }] }} />
             </TouchableOpacity>
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Weight</Text>
+            <Text style={styles.label}>{t('createTask.weightLabel')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter weight in kg"
+              placeholder={t('createTask.weightPlaceholder')}
               placeholderTextColor={Colors.gray[400]}
               keyboardType="numeric"
               value={weight}
@@ -157,15 +159,15 @@ export default function CreateDeliveryScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Type & Priority</Text>
+            <Text style={styles.label}>{t('createTask.typePriorityLabel')}</Text>
             <View style={styles.selectRow}>
               <TouchableOpacity style={styles.selectButton}>
-                <Text style={styles.selectButtonText}>Standard</Text>
+                <Text style={styles.selectButtonText}>{t('createTask.typeDefault')}</Text>
                 <ChevronLeft size={20} color={Colors.gray[600]} style={{ transform: [{ rotate: '-90deg' }] }} />
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.selectButton}>
-                <Text style={styles.selectButtonText}>Standard</Text>
+                <Text style={styles.selectButtonText}>{t('createTask.priorityDefault')}</Text>
                 <ChevronLeft size={20} color={Colors.gray[600]} style={{ transform: [{ rotate: '-90deg' }] }} />
               </TouchableOpacity>
             </View>
@@ -178,14 +180,14 @@ export default function CreateDeliveryScreen() {
           style={styles.cancelButton}
           onPress={handleCancel}
         >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={styles.cancelButtonText}>{t('createTask.cancelButton')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.continueButton}
           onPress={handleNext}
         >
-          <Text style={styles.continueButtonText}>Continue</Text>
+          <Text style={styles.continueButtonText}>{t('common.continue')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

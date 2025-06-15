@@ -6,8 +6,10 @@ import { ChevronLeft, Calendar, Clock, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
 import { ProgressSteps } from '@/components/ProgressSteps';
+import { useTranslation } from 'react-i18next'; // Added import
 
 export default function DeliveryDetailsScreen() {
+  const { t } = useTranslation(); // Initialized t
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
@@ -45,7 +47,7 @@ export default function DeliveryDetailsScreen() {
         <TouchableOpacity onPress={handleBack}>
           <ChevronLeft size={24} color={Colors.primary.DEFAULT} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Delivery</Text>
+        <Text style={styles.headerTitle}>{t('createTask.headerTitle')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
@@ -54,11 +56,11 @@ export default function DeliveryDetailsScreen() {
       <ScrollView style={styles.content}>
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Date</Text>
+            <Text style={styles.label}>{t('createTask.dateLabel')}</Text>
             <TouchableOpacity style={styles.inputWithIcon}>
               <TextInput
                 style={styles.input}
-                placeholder="Select date"
+                placeholder={t('createTask.datePlaceholder')}
                 placeholderTextColor={Colors.gray[400]}
                 value={date}
                 onChangeText={setDate}
@@ -68,11 +70,11 @@ export default function DeliveryDetailsScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Time</Text>
+            <Text style={styles.label}>{t('createTask.timeLabel')}</Text>
             <TouchableOpacity style={styles.inputWithIcon}>
               <TextInput
                 style={styles.input}
-                placeholder="Select delivery time"
+                placeholder={t('createTask.timePlaceholder')}
                 placeholderTextColor={Colors.gray[400]}
                 value={time}
                 onChangeText={setTime}
@@ -82,11 +84,11 @@ export default function DeliveryDetailsScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Picking Address</Text>
+            <Text style={styles.label}>{t('createTask.pickingAddressLabel')}</Text>
             <TouchableOpacity style={styles.inputWithIcon}>
               <TextInput
                 style={styles.input}
-                placeholder="Enter Picking Address"
+                placeholder={t('createTask.pickingAddressPlaceholder')}
                 placeholderTextColor={Colors.gray[400]}
                 value={pickupAddress}
                 onChangeText={setPickupAddress}
@@ -96,11 +98,11 @@ export default function DeliveryDetailsScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Dropping Address</Text>
+            <Text style={styles.label}>{t('createTask.droppingAddressLabel')}</Text>
             <TouchableOpacity style={styles.inputWithIcon}>
               <TextInput
                 style={styles.input}
-                placeholder="Enter Dropping Address"
+                placeholder={t('createTask.droppingAddressPlaceholder')}
                 placeholderTextColor={Colors.gray[400]}
                 value={dropoffAddress}
                 onChangeText={setDropoffAddress}
@@ -110,13 +112,13 @@ export default function DeliveryDetailsScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Price Range</Text>
+            <Text style={styles.label}>{t('createTask.priceRangeLabel')}</Text>
             <View style={styles.priceRangeContainer}>
               <View style={styles.priceInputContainer}>
                 <Text style={styles.currencyText}>$</Text>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Min amount"
+                  placeholder={t('createTask.minAmountPlaceholder')}
                   placeholderTextColor={Colors.gray[400]}
                   keyboardType="numeric"
                   value={minAmount}
@@ -128,7 +130,7 @@ export default function DeliveryDetailsScreen() {
                 <Text style={styles.currencyText}>$</Text>
                 <TextInput
                   style={styles.priceInput}
-                  placeholder="Max amount"
+                  placeholder={t('createTask.maxAmountPlaceholder')}
                   placeholderTextColor={Colors.gray[400]}
                   keyboardType="numeric"
                   value={maxAmount}
@@ -139,10 +141,10 @@ export default function DeliveryDetailsScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Accepted Payment Methods</Text>
+            <Text style={styles.label}>{t('createTask.paymentMethodsLabel')}</Text>
             <TouchableOpacity style={styles.dropdown}>
               <Text style={styles.dropdownText}>
-                {paymentMethods || 'Select payment methods'}
+                {paymentMethods || t('createTask.paymentMethodsPlaceholder')}
               </Text>
               <ChevronLeft size={20} color={Colors.gray[600]} style={{ transform: [{ rotate: '-90deg' }] }} />
             </TouchableOpacity>
@@ -155,14 +157,14 @@ export default function DeliveryDetailsScreen() {
           style={styles.backButton}
           onPress={handleBack}
         >
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>{t('common.back')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.continueButton}
           onPress={handleNext}
         >
-          <Text style={styles.continueButtonText}>Continue</Text>
+          <Text style={styles.continueButtonText}>{t('common.continue')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

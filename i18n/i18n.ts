@@ -7,11 +7,12 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // import en from './locales/en.json';
 // import es from './locales/es.json';
 import en from './translations/en';
-import es from './translations/es';
+// import es from './translations/es'; // Removed Spanish import
+import fr from './translations/fr'; // Added French import
 
 const resources = {
   en: { translation: en },
-  es: { translation: es },
+  fr: { translation: fr }, // Added French, removed Spanish
 };
 
 i18n
