@@ -1,6 +1,10 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router'; // Added useLocalSearchParams
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput as RNTextInput, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native'; // Added Platform
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import * as Location from 'expo-location';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import AnimatedAppLoader from '../../components/AnimatedAppLoader'; // Added import
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Calendar, Clock, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
@@ -9,36 +13,129 @@ import { ProgressSteps } from '@/components/ProgressSteps';
 import { useTranslation } from 'react-i18next'; // Added import
 
 export default function DeliveryDetailsScreen() {
-  const { t } = useTranslation(); // Initialized t
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [pickupAddress, setPickupAddress] = useState('');
+  const { t } = useTranslation();
+  const localParams = useLocalSearchParams();
+
+  // const [date, setDate] = useState(''); // Replaced
+  // const [time, setTime] = useState(''); // Replaced
+  const [date, setDate] = useState(new Date());
+  const [time, setTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
   const [dropoffAddress, setDropoffAddress] = useState('');
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const [paymentMethods, setPaymentMethods] = useState('');
-  
+
+  // New state variables for map and location
+  const [pickupRegion, setPickupRegion] = useState<Region | undefined>(undefined);
+  const [pickupMarkerCoordinate, setPickupMarkerCoordinate] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [pickupAddressString, setPickupAddressString] = useState('');
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
+
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyAn1a1mLTt9HApWWoFRc-hoE_U2mtsBSI0';
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(t('createTask.alertLocationPermissionDeniedTitle'), t('createTask.alertLocationPermissionDeniedMessage'));
+        setPickupRegion({
+          latitude: 37.78825,
+          longitude: -122.4324,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        });
+        setLocationPermissionGranted(false);
+        return;
+      }
+      setLocationPermissionGranted(true);
+      try {
+        let location = await Location.getCurrentPositionAsync({});
+        setPickupRegion({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      } catch (e) {
+          console.error("Error fetching current location:", e);
+          Alert.alert(t('createTask.alertLocationErrorTitle'), t('createTask.alertLocationErrorMessage'));
+          setPickupRegion({ latitude: 37.78825, longitude: -122.4324, latitudeDelta: 0.0922, longitudeDelta: 0.0421 });
+      }
+    })();
+  }, []);
+
+  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
+
+  const onTimeChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
+    setShowTimePicker(Platform.OS === 'ios');
+    if (selectedTime) {
+      setTime(selectedTime);
+    }
+  };
+
+  const performReverseGeocode = async (coordinate: { latitude: number; longitude: number }) => {
+    if (!GOOGLE_MAPS_API_KEY) {
+      Alert.alert(t('createTask.alertApiKeyMissingTitle'), t('createTask.alertApiKeyMissingMessage'));
+      setPickupAddressString(t('createTask.errorFetchingAddress')); // Or a more specific key for API key missing
+      return;
+    }
+    setIsFetchingAddress(true);
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coordinate.latitude},${coordinate.longitude}&key=${GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        setPickupAddressString(data.results[0].formatted_address);
+      } else {
+        setPickupAddressString(t('createTask.addressNotFound'));
+      }
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      setPickupAddressString(t('createTask.errorFetchingAddress'));
+      Alert.alert(t('createTask.alertGeocodingErrorTitle'), t('createTask.alertGeocodingErrorMessage'));
+    } finally {
+      setIsFetchingAddress(false);
+    }
+  };
+
   const handleBack = () => {
     router.back();
   };
   
   const handleNext = () => {
-    const receivedParams = useLocalSearchParams();
-    // Consolidate all params to pass to the summary screen
+    if (!pickupMarkerCoordinate || !pickupAddressString) {
+        Alert.alert(t('createTask.alertMissingPickupTitle'), t('createTask.alertMissingPickupMessage'));
+        return;
+    }
+    if (!dropoffAddress.trim()) {
+        Alert.alert(t('createTask.alertMissingDropoffTitle'), t('createTask.alertMissingDropoffMessage'));
+        return;
+    }
+
     const paramsToForward = {
-      ...receivedParams, // Params from index.tsx (deliveryName, size, weight, type, priority, imageUris)
-      date,
-      time,
-      pickupAddress,
+      ...localParams,
+      date: date.toISOString(), // Pass as ISO string
+      time: time.toISOString(), // Pass as ISO string
+      pickupAddressString: pickupAddressString,
+      pickupLatitude: pickupMarkerCoordinate.latitude.toString(),
+      pickupLongitude: pickupMarkerCoordinate.longitude.toString(),
       dropoffAddress,
       minAmount,
       maxAmount,
       paymentMethods,
     };
-    router.push({
-      pathname: '/create/summary', // Changed from /create/picker
-      params: paramsToForward,
-    });
+    router.push({ pathname: '/create/summary', params: paramsToForward as any });
   };
 
   return (
@@ -57,50 +154,87 @@ export default function DeliveryDetailsScreen() {
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>{t('createTask.dateLabel')}</Text>
-            <TouchableOpacity style={styles.inputWithIcon}>
-              <TextInput
-                style={styles.input}
-                placeholder={t('createTask.datePlaceholder')}
-                placeholderTextColor={Colors.gray[400]}
-                value={date}
-                onChangeText={setDate}
-              />
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.inputWithIcon}>
+              <Text style={styles.inputTextDisplay}>{date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
               <Calendar size={20} color={Colors.gray[600]} />
             </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                testID="datePicker"
+                value={date}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                minimumDate={new Date()}
+              />
+            )}
           </View>
           
           <View style={styles.inputGroup}>
             <Text style={styles.label}>{t('createTask.timeLabel')}</Text>
-            <TouchableOpacity style={styles.inputWithIcon}>
-              <TextInput
-                style={styles.input}
-                placeholder={t('createTask.timePlaceholder')}
-                placeholderTextColor={Colors.gray[400]}
-                value={time}
-                onChangeText={setTime}
-              />
+            <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.inputWithIcon}>
+              <Text style={styles.inputTextDisplay}>{time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
               <Clock size={20} color={Colors.gray[600]} />
             </TouchableOpacity>
+            {showTimePicker && (
+              <DateTimePicker
+                testID="timePicker"
+                value={time}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                is24Hour={false}
+                onChange={onTimeChange}
+              />
+            )}
           </View>
           
           <View style={styles.inputGroup}>
             <Text style={styles.label}>{t('createTask.pickingAddressLabel')}</Text>
-            <TouchableOpacity style={styles.inputWithIcon}>
-              <TextInput
-                style={styles.input}
-                placeholder={t('createTask.pickingAddressPlaceholder')}
-                placeholderTextColor={Colors.gray[400]}
-                value={pickupAddress}
-                onChangeText={setPickupAddress}
-              />
-              <MapPin size={20} color={Colors.gray[600]} />
-            </TouchableOpacity>
+            <RNTextInput
+                style={styles.addressDisplay}
+                placeholder={t('createTask.mapTapPlaceholder')}
+                value={pickupAddressString}
+                editable={false}
+                multiline
+            />
+            {isFetchingAddress && <ActivityIndicator size="small" color={Colors.primary.DEFAULT} style={{ marginVertical: 5 }} />}
+
+            {pickupRegion ? (
+              <MapView
+                provider={PROVIDER_GOOGLE}
+                style={styles.map}
+                initialRegion={pickupRegion}
+                onPress={async (e) => {
+                  const coord = e.nativeEvent.coordinate;
+                  setPickupMarkerCoordinate(coord);
+                  await performReverseGeocode(coord);
+                }}
+                onMapReady={() => setIsMapReady(true)}
+                showsUserLocation={locationPermissionGranted}
+                moveOnMarkerPress={false}
+              >
+                {pickupMarkerCoordinate && isMapReady && (
+                  <Marker draggable coordinate={pickupMarkerCoordinate} title={t('createTask.pickupLocationMarkerTitle')}
+                    onDragEnd={async (e) => {
+                      const coord = e.nativeEvent.coordinate;
+                      setPickupMarkerCoordinate(coord);
+                      await performReverseGeocode(coord);
+                    }}
+                  />
+                )}
+              </MapView>
+            ) : (
+              <View style={{ height: 250, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.gray[100] }}>
+                <AnimatedAppLoader size={80} />
+                <Text style={{ marginTop: spacing.sm, color: Colors.gray[600] }}>{t('createTask.loadingMap')}</Text>
+              </View>
+            )}
           </View>
           
           <View style={styles.inputGroup}>
             <Text style={styles.label}>{t('createTask.droppingAddressLabel')}</Text>
             <TouchableOpacity style={styles.inputWithIcon}>
-              <TextInput
+              <RNTextInput
                 style={styles.input}
                 placeholder={t('createTask.droppingAddressPlaceholder')}
                 placeholderTextColor={Colors.gray[400]}
@@ -205,11 +339,18 @@ const styles = StyleSheet.create({
     color: Colors.gray[700],
     marginBottom: spacing.xs,
   },
-  input: {
+  input: { // This style might be unused now for date/time, or can be adapted for inputTextDisplay
     flex: 1,
     fontFamily: 'Poppins-Regular',
     fontSize: fontSizes.md,
     color: Colors.gray[800],
+  },
+  inputTextDisplay: { // New style for displaying date/time text
+    flex: 1,
+    fontFamily: 'Poppins-Regular',
+    fontSize: fontSizes.md,
+    color: Colors.gray[800],
+    paddingVertical: Platform.OS === 'android' ? spacing.sm - ( (styles.inputWithIcon && styles.inputWithIcon.paddingVertical) || 0) : 0,
   },
   inputWithIcon: {
     flexDirection: 'row',
@@ -295,5 +436,26 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     fontSize: fontSizes.md,
     color: Colors.white,
+  },
+  map: {
+    height: 250,
+    width: '100%',
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.gray[300],
+    borderRadius: borderRadius.md
+  },
+  addressDisplay: {
+    backgroundColor: Colors.gray[100],
+    borderWidth: 1,
+    borderColor: Colors.gray[300],
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontFamily: 'Poppins-Regular',
+    fontSize: fontSizes.md,
+    color: Colors.gray[800],
+    marginBottom: spacing.sm,
+    minHeight: 40
   },
 });

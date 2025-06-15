@@ -12,8 +12,9 @@ export default {
     error: "Error",
     needHelp: "Need help? Contact Support",
     languageEnglish: "ENGLISH", // Example for language switcher
-    success: "Success", // Added
-    notAvailable: "N/A", // General N/A, if profile.notAvailable is too specific
+    success: "Success",
+    notAvailable: "N/A",
+    loading: "Loading..." // Added
   },
   onboarding: {
     selectUserType: 'Select User Type', // Existing
@@ -138,10 +139,27 @@ export default {
     summaryNoImage: "No Image",
     createButton: "Create",
     alertMissingLogin: "You must be logged in to create a task.",
-    alertCreateSuccessTitle: "Success", // Can use common.success
+    alertCreateSuccessTitle: "Success",
     alertCreateSuccessMessage: "Task created successfully!",
-    alertCreateErrorTitle: "Error Creating Task", // Can use common.error
-    alertCreateErrorMessage: "Failed to create task. Please try again."
+    alertCreateErrorTitle: "Error Creating Task",
+    alertCreateErrorMessage: "Failed to create task. Please try again.",
+    loadingMap: "Loading Map...", // Ensure present
+    mapTapPlaceholder: "Tap on the map to select address", // Added
+    alertLocationPermissionDeniedTitle: "Permission Denied", // Added
+    alertLocationPermissionDeniedMessage: "Permission to access location was denied. Using a default location.", // Added
+    alertLocationErrorTitle: "Location Error",  // Added
+    alertLocationErrorMessage: "Could not fetch current location. Using a default region.", // Added
+    alertApiKeyMissingTitle: "API Key Missing", // Added
+    alertApiKeyMissingMessage: "Google Maps API key is not configured.", // Added
+    alertGeocodingErrorTitle: "Geocoding Error", // Added
+    alertGeocodingErrorMessage: "Failed to fetch address for the selected location.", // Added
+    addressNotFound: "Address not found for this location.", // Added
+    errorFetchingAddress: "Error fetching address.", // Added
+    alertMissingPickupTitle: "Missing Pickup Location", // Added
+    alertMissingPickupMessage: "Please select a pickup location on the map by tapping on it.", // Added
+    alertMissingDropoffTitle: "Missing Dropoff Address", // Added
+    alertMissingDropoffMessage: "Please enter the dropoff address.", // Added
+    pickupLocationMarkerTitle: "Pickup Location" // Added
   },
   packageDetails: {
     headerFallbackPrefix: "Task #",
@@ -185,6 +203,19 @@ export default {
     alertAcceptErrorMessage: "Failed to accept bid. Please try again.",
     viewAssignedPickerButton: "View Assigned Picker / All Bids",
     chatButton: "Chat",
-    trackButton: "Track"
+    trackButton: "Track",
+    // Payment status keys
+    paymentStatusLabel: "Payment Status",
+    paymentStatus: {
+      pending_confirmation: "Pending Confirmation",
+      confirmed_by_creator: "Payment Confirmed by Sender",
+      confirmed_by_picker: "Payment Confirmed by Picker",
+      completed: "Payment Completed",
+      disputed: "Payment Disputed"
+    },
+    confirmPaymentMadeButton: "Confirm Payment Made",
+    confirmPaymentReceivedButton: "Confirm Payment Received",
+    alertPaymentStatusUpdated: "Payment status updated.", // Ensure present
+    alertPaymentStatusError: "Failed to update payment status." // Ensure present
   }
 };

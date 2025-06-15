@@ -7,10 +7,11 @@ import { spacing, fontSizes } from '@/constants/Layout';
 import { Package } from 'lucide-react-native';
 import PackageCard from '@/components/PackageCard';
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next'; // Added import
-import { useSelector } from 'react-redux'; // Added Redux
-import { RootState } from '@/store/store'; // Added Redux
-import { getFirestore, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // Added Firestore
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // Removed getFirestore
+import { db } from '../../firebase/init'; // Import initialized db
 
 export default function MyPackagesScreen() {
   const router = useRouter();
@@ -25,8 +26,8 @@ export default function MyPackagesScreen() {
       return;
     }
 
-    const db = getFirestore();
-    const tasksCollection = collection(db, 'tasks');
+    // const db = getFirestore(); // Use imported db
+    const tasksCollection = collection(db, 'tasks'); // Use imported db
     const q = query(
       tasksCollection,
       where('userId', '==', userId),

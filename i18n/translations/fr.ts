@@ -9,9 +9,10 @@ export default {
     email: "fr:Email",
     password: "fr:Password",
     done: "fr:Done", // From previous common keys
-    welcome: "fr:Welcome", // From previous common keys
-    success: "fr:Success", // Added
-    notAvailable: "fr:N/A", // Added (if not already in profile)
+    welcome: "fr:Welcome",
+    success: "fr:Success",
+    notAvailable: "fr:N/A",
+    loading: "fr:Loading..." // Added
   },
   onboarding: {
     selectUserType: "fr:Select User Type", // From previous onboarding keys
@@ -142,7 +143,24 @@ export default {
     alertCreateSuccessTitle: "fr:Success",
     alertCreateSuccessMessage: "fr:Task created successfully!",
     alertCreateErrorTitle: "fr:Error Creating Task",
-    alertCreateErrorMessage: "fr:Failed to create task. Please try again."
+    alertCreateErrorMessage: "fr:Failed to create task. Please try again.",
+    loadingMap: "fr:Loading Map...", // Ensure present
+    mapTapPlaceholder: "fr:Tap on the map to select address", // Added
+    alertLocationPermissionDeniedTitle: "fr:Permission Denied", // Added
+    alertLocationPermissionDeniedMessage: "fr:Permission to access location was denied. Using a default location.", // Added
+    alertLocationErrorTitle: "fr:Location Error", // Added
+    alertLocationErrorMessage: "fr:Could not fetch current location. Using a default region.", // Added
+    alertApiKeyMissingTitle: "fr:API Key Missing", // Added
+    alertApiKeyMissingMessage: "fr:Google Maps API key is not configured.", // Added
+    alertGeocodingErrorTitle: "fr:Geocoding Error", // Added
+    alertGeocodingErrorMessage: "fr:Failed to fetch address for the selected location.", // Added
+    addressNotFound: "fr:Address not found for this location.", // Added
+    errorFetchingAddress: "fr:Error fetching address.", // Added
+    alertMissingPickupTitle: "fr:Missing Pickup Location", // Added
+    alertMissingPickupMessage: "fr:Please select a pickup location on the map by tapping on it.", // Added
+    alertMissingDropoffTitle: "fr:Missing Dropoff Address", // Added
+    alertMissingDropoffMessage: "fr:Please enter the dropoff address.", // Added
+    pickupLocationMarkerTitle: "fr:Pickup Location" // Added
   },
   packageDetails: {
     headerFallbackPrefix: "fr:Task #",
@@ -186,6 +204,19 @@ export default {
     alertAcceptErrorMessage: "fr:Failed to accept bid. Please try again.",
     viewAssignedPickerButton: "fr:View Assigned Picker / All Bids",
     chatButton: "fr:Chat",
-    trackButton: "fr:Track"
+    trackButton: "fr:Track",
+    // Payment status keys
+    paymentStatusLabel: "fr:Payment Status",
+    paymentStatus: {
+      pending_confirmation: "fr:Pending Confirmation",
+      confirmed_by_creator: "fr:Payment Confirmed by Sender",
+      confirmed_by_picker: "fr:Payment Confirmed by Picker",
+      completed: "fr:Payment Completed",
+      disputed: "fr:Payment Disputed"
+    },
+    confirmPaymentMadeButton: "fr:Confirm Payment Made",
+    confirmPaymentReceivedButton: "fr:Confirm Payment Received",
+    alertPaymentStatusUpdated: "fr:Payment status updated.",
+    alertPaymentStatusError: "fr:Failed to update payment status."
   }
 };

@@ -1,10 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'; // Added Alert
-import { router, useLocalSearchParams } from 'expo-router'; // Added useLocalSearchParams
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin } from 'lucide-react-native';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore'; // Added Firestore
-import { useSelector } from 'react-redux'; // Added Redux
-import { RootState } from '@/store/store'; // Added Redux
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'; // Removed getFirestore
+import { db } from '../../firebase/init'; // Import initialized db
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
 import { ProgressSteps } from '@/components/ProgressSteps';
@@ -23,10 +24,13 @@ export default function DeliverySummaryScreen() {
     weight = 'N/A',
     type = 'Standard',
     priority = 'Standard',
-    imageUris: imageUrisJson = '[]', // Default to empty array JSON string
+    imageUris: imageUrisJson = '[]',
     date = 'N/A',
     time = 'N/A',
-    pickupAddress = 'N/A',
+    // pickupAddress = 'N/A', // Old field, replaced by string and coords
+    pickupAddressString = 'N/A', // New field
+    pickupLatitude = null,       // New field
+    pickupLongitude = null,      // New field
     dropoffAddress = 'N/A',
     minAmount = '0',
     maxAmount = '0',
@@ -53,7 +57,7 @@ export default function DeliverySummaryScreen() {
       return;
     }
 
-    const db = getFirestore();
+    // const db = getFirestore(); // Use imported db
     const taskData = {
       userId,
       deliveryName: deliveryName as string,
@@ -64,7 +68,11 @@ export default function DeliverySummaryScreen() {
       imageUris: parsedImageUris, // Store the array of URIs
       date: date as string,
       time: time as string,
-      pickupAddress: pickupAddress as string,
+      pickupAddressString: pickupAddressString as string, // Use new string field
+      pickupLocation: pickupLatitude && pickupLongitude ? { // New GeoPoint field
+        latitude: parseFloat(pickupLatitude as string),
+        longitude: parseFloat(pickupLongitude as string),
+      } : null,
       dropoffAddress: dropoffAddress as string,
       priceMin: parseFloat(minAmount as string) || 0,
       priceMax: parseFloat(maxAmount as string) || 0,
@@ -149,14 +157,18 @@ export default function DeliverySummaryScreen() {
           
           <View style={styles.addressContainer}>
             <MapPin size={16} color={Colors.primary.DEFAULT} />
-            <Text style={styles.addressText}>{pickupAddress as string} {t('createTask.summaryAddressJoiner')} {dropoffAddress as string}</Text>
+            <Text style={styles.addressText}>{pickupAddressString as string} {t('createTask.summaryAddressJoiner')} {dropoffAddress as string}</Text>
             {/* <TouchableOpacity>
               <Text style={styles.changeText}>change</Text>
             </TouchableOpacity> */}
           </View>
           
           <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>{t('createTask.summaryPickupDateLabel')}: {date as string} {t('createTask.summaryAtConnector')} {time as string}</Text>
+            <Text style={styles.timeText}>
+              {t('createTask.summaryPickupDateLabel')}: {new Date(date as string).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+              {' '}{t('createTask.summaryAtConnector')}{' '}
+              {new Date(time as string).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+            </Text>
             <Text style={styles.timeText}>{t('createTask.summaryPaymentMethodsLabel')}: {paymentMethods as string}</Text>
           </View>
         </View>

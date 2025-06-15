@@ -6,23 +6,23 @@ import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import { SplashScreen } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Provider, useDispatch, useSelector } from 'react-redux'; // Added useDispatch
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store } from '@/store/store';
 import '@/i18n/i18n';
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore'; // Added Firestore imports
+// import { initializeApp, getApps } from 'firebase/app'; // Removed direct init
+// import { getAuth, onAuthStateChanged } from 'firebase/auth'; // getAuth removed
+import { onAuthStateChanged } from 'firebase/auth'; // onAuthStateChanged still needed
+// import { getFirestore, doc, getDoc } from 'firebase/firestore'; // getFirestore, doc, getDoc removed
+import { doc, getDoc } from 'firebase/firestore'; // doc, getDoc still needed
+import { auth, db } from '../firebase/init'; // Import initialized services
 import { setAuthenticated, setUser, logout } from '@/store/authSlice';
-import firebaseConfig from '../firebaseConfig';
+// import firebaseConfig from '../firebaseConfig'; // No longer needed here
 import { RootState } from '@/store/store';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-// Initialize Firebase
-if (!getApps().length) {
-  initializeApp(firebaseConfig);
-}
+// Firebase initialization is now in firebase/init.ts
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -57,11 +57,11 @@ function AppContent() {
 
   // Firebase Auth Listener
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => { // Made async
+    // Use the imported auth instance
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // User is signed in
-        const db = getFirestore();
+        // Use the imported db instance
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         try {
           const userDocSnap = await getDoc(userDocRef);

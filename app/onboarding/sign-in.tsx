@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore'; // Added Firestore imports
-import { useDispatch } from 'react-redux'; // Added Redux dispatch
-import { setOnboardingCompleted } from '../../store/authSlice'; // Added Redux action
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'; // Removed getAuth
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'; // Removed getFirestore
+import { auth, db } from '../../firebase/init'; // Import initialized services
+import { useDispatch } from 'react-redux';
+import { setOnboardingCompleted } from '../../store/authSlice';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
@@ -13,7 +14,6 @@ import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
-// Initialize Firebase Auth - getAuth() can be called as needed, not necessarily globally here.
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,9 +35,9 @@ export default function SignInScreen() {
       Alert.alert(t('auth.alertAuthErrorTitle'), t('auth.alertValidationEmailPassword'));
       return;
     }
-    const auth = getAuth();
+    // const auth = getAuth(); // Use imported auth
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password); // Use imported auth
       const firebaseUser = userCredential.user;
       console.log('Sign Up Successful (Firebase Auth):', firebaseUser);
 
@@ -51,8 +51,8 @@ export default function SignInScreen() {
         return;
       }
 
-      const db = getFirestore();
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      // const db = getFirestore(); // Use imported db
+      const userDocRef = doc(db, 'users', firebaseUser.uid); // Use imported db
       const userProfileData = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -87,9 +87,9 @@ export default function SignInScreen() {
       Alert.alert(t('auth.alertAuthErrorTitle'), t('auth.alertValidationEmailPassword'));
       return;
     }
-    const auth = getAuth();
+    // const auth = getAuth(); // Use imported auth
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password); // Use imported auth
       console.log('Sign In Successful:', userCredential.user);
       Alert.alert(t('auth.alertSignInSuccessTitle'), t('auth.alertSignInSuccessMessage'));
     } catch (error: any) {

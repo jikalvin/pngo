@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AnimatedAppLoader from '../../components/AnimatedAppLoader'; // Added import
 import Colors from '@/constants/Colors';
 import { spacing, fontSizes, borderRadius } from '@/constants/Layout'; // Added borderRadius
 import { ChevronLeft, MessageCircle, MapPin } from 'lucide-react-native';
@@ -8,8 +9,9 @@ import StatusBadge from '@/components/StatusBadge';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, query, where, onSnapshot, writeBatch } from 'firebase/firestore';
-import { useTranslation } from 'react-i18next'; // Added import
+import { doc, getDoc, collection, addDoc, serverTimestamp, query, where, onSnapshot, writeBatch, updateDoc } from 'firebase/firestore'; // Added updateDoc
+import { db } from '../../firebase/init';
+import { useTranslation } from 'react-i18next';
 
 export default function PackageDetailsScreen() {
   const { t } = useTranslation(); // Initialized t
@@ -31,8 +33,8 @@ export default function PackageDetailsScreen() {
       Alert.alert(t('packageDetails.errorTitle'), t('createTask.alertMissingLogin')); // Reusing a general key, or create specific
       return;
     }
-    const db = getFirestore();
-    const taskDocRef = doc(db, 'tasks', taskId as string);
+    // const db = getFirestore(); // Use imported db
+    const taskDocRef = doc(db, 'tasks', taskId as string); // Use imported db
 
     const fetchTask = async () => {
       setLoading(true);
@@ -57,9 +59,9 @@ export default function PackageDetailsScreen() {
   // Effect for fetching bids if the current user is the task owner and task is open
   useEffect(() => {
     if (currentUser?.id === task?.userId && taskId && task?.status === 'open') {
-      const db = getFirestore();
+      // const db = getFirestore(); // Use imported db
       const bidsQuery = query(
-        collection(db, 'bids'),
+        collection(db, 'bids'), // Use imported db
         where('taskId', '==', taskId),
         where('status', '==', 'active') // Only show active bids for acceptance
       );
@@ -79,11 +81,11 @@ export default function PackageDetailsScreen() {
 
   const handleAcceptBid = async (bid: any) => {
     if (!currentUser || !task || currentUser.id !== task.userId) {
-      Alert.alert("Error", "You are not authorized to accept bids for this task.");
+      Alert.alert(t('packageDetails.errorTitle'), t('packageDetails.alertAcceptAuthError')); // Already internationalized
       return;
     }
-    const db = getFirestore();
-    const batch = writeBatch(db);
+    // const db = getFirestore(); // Use imported db
+    const batch = writeBatch(db); // Use imported db
 
     // 1. Update the accepted bid
     const acceptedBidRef = doc(db, 'bids', bid.id);
@@ -95,6 +97,7 @@ export default function PackageDetailsScreen() {
       status: 'assigned',
       pickerId: bid.pickerId,
       assignedPrice: bid.bidAmount,
+      paymentStatusV2: 'pending_confirmation' // Initialize payment status
       // acceptedBidId: bid.id // Optional: store accepted bid ID
     });
 
@@ -111,25 +114,25 @@ export default function PackageDetailsScreen() {
 
     try {
       await batch.commit();
-      Alert.alert("Success", "Bid accepted and task assigned!");
+      Alert.alert(t('packageDetails.alertAcceptSuccessTitle'), t('packageDetails.alertAcceptSuccessMessage')); // Already internationalized
       // UI will update due to onSnapshot listeners for task and potentially bids
     } catch (error) {
       console.error("Error accepting bid:", error);
-      Alert.alert("Error", "Failed to accept bid. Please try again.");
+      Alert.alert(t('packageDetails.alertAcceptErrorTitle'), t('packageDetails.alertAcceptErrorMessage')); // Already internationalized
     }
   };
 
   const handleSubmitBid = async () => {
     if (!bidAmount || isNaN(parseFloat(bidAmount)) || parseFloat(bidAmount) <= 0) {
-      Alert.alert("Invalid Bid", "Please enter a valid bid amount.");
+      Alert.alert(t('packageDetails.alertInvalidBidTitle'), t('packageDetails.alertInvalidBidMessage')); // Already internationalized
       return;
     }
     if (!currentUser || !task) {
-      Alert.alert("Error", "User or task details missing.");
+      Alert.alert(t('packageDetails.errorTitle'), t('packageDetails.alertUserOrTaskMissing')); // Already internationalized
       return;
     }
 
-    const db = getFirestore();
+    // const db = getFirestore(); // Use imported db
     const bidData = {
       taskId: taskId,
       pickerId: currentUser.id,
@@ -143,21 +146,39 @@ export default function PackageDetailsScreen() {
 
     try {
       await addDoc(collection(db, 'bids'), bidData);
-      Alert.alert("Success", "Bid placed successfully!");
+      Alert.alert(t('packageDetails.alertBidSuccessTitle'), t('packageDetails.alertBidSuccessMessage')); // Already internationalized
       setIsBidPlaced(true); // Disable further bidding or change UI
       setBidAmount(''); // Clear input
     } catch (error) {
       console.error("Error placing bid:", error);
-      Alert.alert("Error", "Failed to place bid. Please try again.");
+      Alert.alert(t('packageDetails.alertBidErrorTitle'), t('packageDetails.alertBidErrorMessage')); // Already internationalized
+    }
+  };
+
+  const handleConfirmPayment = async (newPaymentStatusKey: string, currentTaskPaymentStatus?: string) => {
+    if (!task || !taskId) return;
+    // db is already imported and available in this scope
+    const taskDocRef = doc(db, 'tasks', taskId as string);
+    let finalPaymentStatus = newPaymentStatusKey;
+
+    if ((newPaymentStatusKey === 'confirmed_by_creator' && currentTaskPaymentStatus === 'confirmed_by_picker') ||
+        (newPaymentStatusKey === 'confirmed_by_picker' && currentTaskPaymentStatus === 'confirmed_by_creator')) {
+      finalPaymentStatus = 'completed';
+    }
+
+    try {
+      await updateDoc(taskDocRef, { paymentStatusV2: finalPaymentStatus });
+      Alert.alert(t('common.success'), t('packageDetails.alertPaymentStatusUpdated'));
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      Alert.alert(t('common.error'), t('packageDetails.alertPaymentStatusError'));
     }
   };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primary.DEFAULT} />
-        </View>
+        <AnimatedAppLoader />
       </SafeAreaView>
     );
   }
@@ -240,6 +261,21 @@ export default function PackageDetailsScreen() {
           </View>
         </View>
 
+        {/* Payment Status Display */}
+        {task && (task.status === 'assigned' || task.status === 'delivered') && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('packageDetails.paymentStatusLabel')}</Text>
+            <View style={styles.detailRow}>
+              {/* <Text style={styles.label}>Status</Text> */}
+              <Text style={styles.value}>
+                {task.paymentStatusV2
+                  ? t(`packageDetails.paymentStatus.${task.paymentStatusV2}`, { defaultValue: task.paymentStatusV2 })
+                  : t('packageDetails.paymentStatus.pending_confirmation')}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Bidding Section for Pickers */}
         {currentUser?.userType === 'picker' && task?.status === 'open' && (
           <View style={styles.biddingSection}>
@@ -296,7 +332,6 @@ export default function PackageDetailsScreen() {
 
         {/* Existing Actions - adjust visibility/functionality based on user type */}
         {currentUser?.userType !== 'picker' && task?.status !== 'open' && (
-          // Show "View Delivery Pickers / Bids" if task is assigned or closed, for creator
           <View style={styles.actions}>
             <Pressable
               style={[styles.actionButton, styles.primaryButton]}
@@ -307,12 +342,42 @@ export default function PackageDetailsScreen() {
           </View>
         )}
 
+        {/* Payment Confirmation Button for Task Creator */}
+        {currentUser?.id === task?.userId &&
+         (task?.status === 'assigned' || task?.status === 'delivered') &&
+         task.paymentStatusV2 !== 'completed' &&
+         task.paymentStatusV2 !== 'confirmed_by_creator' && (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryButton, { marginTop: spacing.md }]}
+              onPress={() => handleConfirmPayment('confirmed_by_creator', task.paymentStatusV2)}
+            >
+              <Text style={styles.secondaryButtonText}>{t('packageDetails.confirmPaymentMadeButton')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Payment Confirmation Button for Assigned Picker */}
+        {currentUser?.id === task?.pickerId &&
+         (task?.status === 'assigned' || task?.status === 'delivered') &&
+         task.paymentStatusV2 !== 'completed' &&
+         task.paymentStatusV2 !== 'confirmed_by_picker' && (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryButton, { marginTop: spacing.md }]}
+              onPress={() => handleConfirmPayment('confirmed_by_picker', task.paymentStatusV2)}
+            >
+              <Text style={styles.secondaryButtonText}>{t('packageDetails.confirmPaymentReceivedButton')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Common actions or adjust based on role */}
         <View style={styles.actions}>
           <View style={styles.secondaryActions}>
             <Pressable 
               style={[styles.actionButton, styles.secondaryButton]}
-              onPress={() => router.push(`/package/${taskId}/chat`)} // Use taskId
+              onPress={() => router.push(`/package/${taskId}/chat`)}
             >
               <MessageCircle color={Colors.primary.DEFAULT} size={20} />
               <Text style={styles.secondaryButtonText}>{t('packageDetails.chatButton')}</Text>
@@ -320,7 +385,7 @@ export default function PackageDetailsScreen() {
             
             <Pressable 
               style={[styles.actionButton, styles.secondaryButton]}
-              onPress={() => router.push(`/package/${id}/track`)}
+              onPress={() => router.push(`/package/${taskId}/track`)} // Use taskId for consistency
             >
               <MapPin color={Colors.primary.DEFAULT} size={20} />
               <Text style={styles.secondaryButtonText}>{t('packageDetails.trackButton')}</Text>

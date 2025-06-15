@@ -4,10 +4,11 @@ import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
 import { Search as SearchIcon, Package } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next'; // Added import
+import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { getFirestore, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'; // Removed getFirestore
+import { db } from '../../firebase/init'; // Import initialized db
 import PackageCard from '@/components/PackageCard';
 import { useRouter } from 'expo-router';
 
@@ -18,9 +19,9 @@ export default function SearchScreen() {
   const [openTasks, setOpenTasks] = useState<any[]>([]);
 
   useEffect(() => {
-    const db = getFirestore();
+    // const db = getFirestore(); // Use imported db
     const q = query(
-      collection(db, 'tasks'),
+      collection(db, 'tasks'), // Use imported db
       where('status', '==', 'open'),
       orderBy('createdAt', 'desc')
     );
