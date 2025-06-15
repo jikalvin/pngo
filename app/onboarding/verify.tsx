@@ -1,23 +1,25 @@
 import { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore'; // Added Firestore imports
+import { confirmationResultHolder, setConfirmationResult } from '../../store/tempAuthStore';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux'; // Removed useSelector, RootState
 import { setOnboardingCompleted } from '@/store/authSlice';
 import { useTranslation } from 'react-i18next';
-import { RootState } from '@/store/store';
 
 export default function VerifyScreen() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<(TextInput | null)[]>([]);
   const dispatch = useDispatch();
   const { t } = useTranslation();
-  const user = useSelector((state: RootState) => state.auth?.user ?? null);
+  // Get phone number and userType from params
+  const { phoneNumber, userType } = useLocalSearchParams<{ phoneNumber?: string; userType?: string }>();
   
   const handleOtpChange = (value: string, index: number) => {
     const newOtp = [...otp];
@@ -30,9 +32,63 @@ export default function VerifyScreen() {
     }
   };
   
-  const handleComplete = () => {
-    dispatch(setOnboardingCompleted(true));
-    router.replace('/(tabs)');
+  const handleComplete = async () => {
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) {
+      Alert.alert(t('common.error'), t('auth.invalidOtpError')); // Assuming you add this key
+      return;
+    }
+
+    if (!confirmationResultHolder) {
+      Alert.alert(
+        t('common.error'),
+        t('auth.verificationNotInitiatedError') // Assuming you add this key
+      );
+      router.back(); // Or navigate to a more appropriate screen
+      return;
+    }
+
+    try {
+      const userCredential = await confirmationResultHolder.confirm(otpCode);
+      const firebaseUser = userCredential.user;
+      console.log('User signed in with Firebase Auth:', firebaseUser);
+
+      if (!userType) {
+        console.error("User type is undefined. Cannot create profile.");
+        Alert.alert(t('common.error'), "User type is missing. Profile creation failed.");
+        // Potentially log out user or guide them back if this is critical
+        setConfirmationResult(null); // Clear holder as we can't proceed
+        return;
+      }
+
+      // Create user profile in Firestore
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+      const userProfileData = {
+        uid: firebaseUser.uid,
+        phoneNumber: firebaseUser.phoneNumber || phoneNumber, // Prefer firebaseUser.phoneNumber
+        userType: userType, // From route params
+        createdAt: serverTimestamp(),
+        displayName: null, // Or a default like "New User"
+        profileDescription: null,
+        email: firebaseUser.email || null, // Include if available
+      };
+
+      await setDoc(userDocRef, userProfileData, { merge: true });
+      console.log('User profile created/updated in Firestore.');
+
+      setConfirmationResult(null); // Clear the holder
+
+      // Onboarding is now complete from Firebase perspective & Firestore profile created
+      dispatch(setOnboardingCompleted(true));
+      router.replace('/(tabs)'); // Navigate to the main app experience
+
+    } catch (error: any) {
+      console.error('OTP Verification or Firestore Error:', error);
+      Alert.alert(t('common.error'), error.message || t('auth.invalidOtpError'));
+      // Do not clear confirmationResultHolder here to allow retry with the same phone number attempt if it's an OTP error.
+      // If it's a Firestore error, the user is authenticated but profile creation failed, which needs handling.
+    }
   };
   
   const goBack = () => {
@@ -59,7 +115,7 @@ export default function VerifyScreen() {
         >
           <Text style={styles.title}>{t('auth.verifyPhoneNumber')}</Text>
           <Text style={styles.subtitle}>
-            {t('auth.enterVerificationCode')} {user?.phoneNumber ?? '+237 679 682 262'}
+            {t('auth.enterVerificationCode')} {phoneNumber ?? ''}
           </Text>
         </Animated.View>
 

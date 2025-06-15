@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native'; // Removed Pressable
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -6,33 +6,53 @@ import Colors from '@/constants/Colors';
 import { spacing, fontSizes } from '@/constants/Layout';
 import { Package } from 'lucide-react-native';
 import PackageCard from '@/components/PackageCard';
+import { useState, useEffect } from 'react'; // Added hooks
+import { useSelector } from 'react-redux'; // Added Redux
+import { RootState } from '@/store/store'; // Added Redux
+import { getFirestore, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; // Added Firestore
 
 export default function MyPackagesScreen() {
   const router = useRouter();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.id;
+  const [tasks, setTasks] = useState<any[]>([]); // To store fetched tasks
 
-  // TODO: Fetch packages from API
-  const packages = [
-    {
-      id: '1',
-      title: 'Package #1234',
-      status: 'pending',
-      from: '123 Main St, City',
-      to: '456 Second St, City',
-      created: '2024-01-20',
-    },
-    {
-      id: '2',
-      title: 'Package #5678',
-      status: 'in_transit',
-      from: '789 Third St, City',
-      to: '321 Fourth St, City',
-      created: '2024-01-19',
-    },
-  ];
+  useEffect(() => {
+    if (!userId) {
+      setTasks([]); // Clear tasks if no user
+      return;
+    }
 
-  const renderPackage = ({ item }) => (
+    const db = getFirestore();
+    const tasksCollection = collection(db, 'tasks');
+    const q = query(
+      tasksCollection,
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const userTasks: any[] = [];
+      querySnapshot.forEach((doc) => {
+        userTasks.push({ id: doc.id, ...doc.data() });
+      });
+      setTasks(userTasks);
+    });
+
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, [userId]); // Rerun effect if userId changes
+
+  const renderPackage = ({ item }: { item: any }) => (
     <PackageCard
-      package={item}
+      package={{ // Adapt Firestore data to PackageCard's expected 'package' prop structure
+        id: item.id,
+        title: item.deliveryName || `Package #${item.id.substring(0,4)}`,
+        status: item.status,
+        from: item.pickupAddress,
+        to: item.dropoffAddress, // Assuming dropoffAddress is the destination
+        // Firestore Timestamps need conversion. Handle potential null.
+        created: item.createdAt?.toDate ? item.createdAt.toDate().toISOString() : new Date().toISOString(),
+      }}
       onPress={() => router.push(`/package/${item.id}`)}
     />
   );
@@ -48,9 +68,9 @@ export default function MyPackagesScreen() {
         </Animated.Text>
       </View>
       
-      {packages.length > 0 ? (
+      {tasks.length > 0 ? (
         <FlatList
-          data={packages}
+          data={tasks}
           renderItem={renderPackage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}

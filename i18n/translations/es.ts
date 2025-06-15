@@ -28,4 +28,22 @@ export default {
     verifyPhoneNumber: 'Verificar número de teléfono',
     enterVerificationCode: 'Ingresa el código de verificación enviado a',
   },
+  profile: {
+    title: "es:Profile",
+    personalDetailsTitle: "es:Personal Details",
+    personalDetailsDescription: "es:Name, phone number, address, email",
+    accountSettingsTitle: "es:Account Settings",
+    accountSettingsDescription: "es:Password, payment and security",
+    kycVerificationTitle: "es:KYC & Verification",
+    kycVerificationDescriptionPrefix: "es:Verification Status:",
+    kycVerificationStatusVerified: "es:Verified",
+    appPreferencesTitle: "es:App Preferences",
+    appPreferencesDescription: "es:Language and Theme",
+    availabilityTitle: "es:Availability",
+    availabilityDescription: "es:Schedule, Unavailable",
+    deliveryHistoryTitle: "es:Delivery History",
+    deliveryHistoryDescription: "es:View completed, ongoing, and cancelled tasks",
+    favouritesTitle: "es:Favourites",
+    favouritesDescription: "es:Favorite Pickers for quick access"
+  }
 };

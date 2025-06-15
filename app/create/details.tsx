@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router'; // Added useLocalSearchParams
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Calendar, Clock, MapPin } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
@@ -21,7 +21,22 @@ export default function DeliveryDetailsScreen() {
   };
   
   const handleNext = () => {
-    router.push('/create/picker');
+    const receivedParams = useLocalSearchParams();
+    // Consolidate all params to pass to the summary screen
+    const paramsToForward = {
+      ...receivedParams, // Params from index.tsx (deliveryName, size, weight, type, priority, imageUris)
+      date,
+      time,
+      pickupAddress,
+      dropoffAddress,
+      minAmount,
+      maxAmount,
+      paymentMethods,
+    };
+    router.push({
+      pathname: '/create/summary', // Changed from /create/picker
+      params: paramsToForward,
+    });
   };
 
   return (

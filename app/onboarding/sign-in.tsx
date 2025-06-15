@@ -1,34 +1,106 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+// Assuming firebaseConfig.ts exports the config object directly, not an initialized app.
+// We get auth from getAuth()
+import firebaseConfig from '../../firebaseConfig'; // Adjusted path based on file location
+import { setConfirmationResult } from '../../store/tempAuthStore'; // Added import
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes } from '@/constants/Layout';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { useDispatch } from 'react-redux';
-import { setAuthenticated, setUser } from '@/store/authSlice';
 import { useTranslation } from 'react-i18next';
+
+// Initialize Firebase Auth
+const auth = getAuth();
 
 export default function SignInScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [countryCode, setCountryCode] = useState('+237');
-  const dispatch = useDispatch();
+  // const [confirmation, setConfirmation] = useState<any>(null); // Removed state
   const { t } = useTranslation();
   const { userType } = useLocalSearchParams();
-  
-  const handleContinue = () => {
-    // Dummy authentication - in a real app, this would make an API call
-    if (phoneNumber) {
-      dispatch(setAuthenticated(true));
-      dispatch(setUser({
-        id: '1',
-        email: 'dummy@example.com',
-        phoneNumber: `${countryCode}${phoneNumber}`,
-        userType: userType as 'user' | 'picker'
-      }));
-      router.push('/onboarding/verify');
+  const recaptchaVerifierRef = useRef<any>(null);
+  const recaptchaContainerRef = useRef<any>(null); // Ref for the View
+
+  useEffect(() => {
+    // Ensure firebaseConfig is initialized before this runs if needed by getAuth()
+    // For client-side SDK, getAuth() usually handles initialization if Firebase app is initialized.
+    if (!recaptchaVerifierRef.current && recaptchaContainerRef.current) {
+      // The 'recaptcha-container' div ID is expected by RecaptchaVerifier.
+      // In React Native, this is tricky. We are assigning a ref to a View.
+      // This standard web RecaptchaVerifier might not work directly.
+      // Expo offers FirebaseRecaptchaVerifierModal for a more RN-idiomatic approach.
+      // For this task, we follow the instruction using the web verifier.
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          recaptchaContainerRef.current, // Giving the View node. This is the problematic part.
+          {
+            size: 'invisible',
+            callback: (response: any) => {
+              // reCAPTCHA solved, allow signInWithPhoneNumber.
+              // console.log("reCAPTCHA solved:", response);
+            },
+            'expired-callback': () => {
+              // Response expired. Ask user to solve reCAPTCHA again.
+              // console.log("reCAPTCHA expired");
+            },
+          }
+        );
+        recaptchaVerifierRef.current = window.recaptchaVerifier;
+        // It's common to render the verifier initially if it's not 'invisible'
+        // For 'invisible', it triggers when needed.
+        // recaptchaVerifierRef.current.render().catch(console.error);
+      } catch (error) {
+        console.error("Error initializing RecaptchaVerifier:", error);
+        Alert.alert("Error", "Failed to initialize reCAPTCHA verifier.");
+      }
+    }
+    // Cleanup on unmount if necessary, though RecaptchaVerifier might handle its own cleanup.
+    return () => {
+      // if (recaptchaVerifierRef.current) {
+      //   recaptchaVerifierRef.current.clear(); // Example cleanup
+      // }
+    };
+  }, [auth]); // Add auth to dependency array
+
+  const handleContinue = async () => {
+    if (!phoneNumber) {
+      Alert.alert(t('auth.enterPhoneNumber'));
+      return;
+    }
+    if (!recaptchaVerifierRef.current) {
+      Alert.alert("Error", "reCAPTCHA verifier not initialized.");
+      return;
+    }
+
+    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+    try {
+      const confirmationResult = await signInWithPhoneNumber(
+        auth,
+        fullPhoneNumber,
+        recaptchaVerifierRef.current
+      );
+      setConfirmationResult(confirmationResult); // Use imported setter
+      // Navigate to verify screen, pass phone number and user type
+      // confirmationResult itself is complex and not easily passable via params.
+      // The verify screen will need to use this confirmationResult.
+      // For now, we store it in state; the verify screen will need a way to access it.
+      // This will be handled in the next subtask for verify.tsx.
+      router.push({
+        pathname: '/onboarding/verify',
+        params: { userType: userType as string, phoneNumber: fullPhoneNumber },
+      });
+    } catch (error: any) {
+      console.error('Firebase Phone Auth Error:', error);
+      Alert.alert(t('common.error'), error.message || t('auth.phoneSignInError'));
+      // It's good practice to reset the reCAPTCHA verifier on error if needed
+      // grecaptcha.reset(window.recaptchaWidgetId); or similar for web
+      // For invisible, it might reset automatically or need specific handling.
     }
   };
   
@@ -59,6 +131,13 @@ export default function SignInScreen() {
           entering={FadeIn.duration(800).delay(500)}
           style={styles.formContainer}
         >
+          {/* This View is a placeholder for the reCAPTCHA verifier.
+              It might need to be a WebView or use a specific Expo component
+              for Firebase reCAPTCHA to work correctly in React Native.
+              Using testID as 'id' is a workaround assumption.
+              It should be styled to be invisible or correctly overlayed if visible. */}
+          <View testID="recaptcha-container" ref={recaptchaContainerRef} style={styles.recaptchaPlaceholder} />
+
           <Text style={styles.label}>{t('common.phoneNumber')}</Text>
           <View style={styles.phoneInputContainer}>
             <TouchableOpacity style={styles.countryCodeContainer}>
@@ -107,6 +186,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.black,
+  },
+  recaptchaPlaceholder: {
+    // Assuming 'invisible' reCAPTCHA, this might not need explicit styling
+    // or could be { width: 0, height: 0, position: 'absolute' }
+    // If it's a visible one, it would need actual dimensions.
+    width: 0,
+    height: 0,
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,

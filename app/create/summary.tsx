@@ -1,18 +1,85 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'; // Added Alert
+import { router, useLocalSearchParams } from 'expo-router'; // Added useLocalSearchParams
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, MapPin } from 'lucide-react-native';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore'; // Added Firestore
+import { useSelector } from 'react-redux'; // Added Redux
+import { RootState } from '@/store/store'; // Added Redux
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
 import { ProgressSteps } from '@/components/ProgressSteps';
 
 export default function DeliverySummaryScreen() {
+  const params = useLocalSearchParams();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userId = user?.id;
+
+  // Extract params - provide defaults or handle undefined
+  const {
+    deliveryName = 'N/A',
+    size = 'N/A',
+    weight = 'N/A',
+    type = 'Standard',
+    priority = 'Standard',
+    imageUris: imageUrisJson = '[]', // Default to empty array JSON string
+    date = 'N/A',
+    time = 'N/A',
+    pickupAddress = 'N/A',
+    dropoffAddress = 'N/A',
+    minAmount = '0',
+    maxAmount = '0',
+    paymentMethods = 'N/A',
+  } = params;
+
+  let parsedImageUris: string[] = [];
+  try {
+    const uris = JSON.parse(imageUrisJson as string);
+    if (Array.isArray(uris) && uris.every(u => typeof u === 'string')) {
+      parsedImageUris = uris;
+    }
+  } catch (e) {
+    console.error("Error parsing imageUris:", e);
+  }
+
   const handleBack = () => {
     router.back();
   };
   
-  const handleCreate = () => {
-    router.replace('/(tabs)');
+  const handleCreate = async () => {
+    if (!userId) {
+      Alert.alert("Error", "You must be logged in to create a task.");
+      return;
+    }
+
+    const db = getFirestore();
+    const taskData = {
+      userId,
+      deliveryName: deliveryName as string,
+      size: size as string,
+      weight: weight as string,
+      type: type as string,
+      priority: priority as string,
+      imageUris: parsedImageUris, // Store the array of URIs
+      date: date as string,
+      time: time as string,
+      pickupAddress: pickupAddress as string,
+      dropoffAddress: dropoffAddress as string,
+      priceMin: parseFloat(minAmount as string) || 0,
+      priceMax: parseFloat(maxAmount as string) || 0,
+      paymentMethods: paymentMethods as string, // This could be an array or object if structured
+      createdAt: serverTimestamp(),
+      status: 'open', // Initial status
+      pickerId: null, // No picker assigned yet
+    };
+
+    try {
+      await addDoc(collection(db, 'tasks'), taskData);
+      Alert.alert("Success", "Task created successfully!");
+      router.replace('/(tabs)/my-packages');
+    } catch (error) {
+      console.error("Error creating task:", error);
+      Alert.alert("Error", "Failed to create task. Please try again.");
+    }
   };
 
   return (
@@ -29,60 +96,66 @@ export default function DeliverySummaryScreen() {
       
       <ScrollView style={styles.content}>
         <View style={styles.imagesContainer}>
-          <Image
-            source={{ uri: 'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg' }}
-            style={styles.mainImage}
-          />
+          {parsedImageUris.length > 0 ? (
+            <Image
+              source={{ uri: parsedImageUris[0] }}
+              style={styles.mainImage}
+            />
+          ) : (
+            <View style={[styles.mainImage, styles.placeholderImage]}>
+              <Text>No Image</Text>
+            </View>
+          )}
           <View style={styles.thumbnailsContainer}>
-            <Image
-              source={{ uri: 'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg' }}
-              style={styles.thumbnail}
-            />
-            <Image
-              source={{ uri: 'https://images.pexels.com/photos/1435735/pexels-photo-1435735.jpeg' }}
-              style={styles.thumbnail}
-            />
+            {parsedImageUris.slice(1, 3).map((uri, index) => (
+              <Image
+                key={index}
+                source={{ uri }}
+                style={styles.thumbnail}
+              />
+            ))}
           </View>
         </View>
         
         <View style={styles.detailsContainer}>
-          <Text style={styles.deliveryTitle}>Bag of Oranges Delivery</Text>
-          <Text style={styles.deliveryInfo}>Size: 1 box and more</Text>
-          <Text style={styles.deliveryInfo}>Weight: ~30 kg</Text>
-          <Text style={styles.deliveryDescription}>A box and more of oranges</Text>
+          <Text style={styles.deliveryTitle}>{deliveryName as string}</Text>
+          <Text style={styles.deliveryInfo}>Size: {size as string}</Text>
+          <Text style={styles.deliveryInfo}>Weight: ~{weight as string} kg</Text>
+          {/* <Text style={styles.deliveryDescription}>Description here if available</Text> */}
           
           <View style={styles.tagContainer}>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>Priority: Standard</Text>
+              <Text style={styles.tagText}>Priority: {priority as string}</Text>
             </View>
           </View>
           
           <View style={styles.tagContainer}>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>Type: Fragile</Text>
+              <Text style={styles.tagText}>Type: {type as string}</Text>
             </View>
           </View>
           
-          <View style={styles.tagContainer}>
+          {/* <View style={styles.tagContainer}>
             <View style={styles.tag}>
               <Text style={styles.tagText}>Apply: (none)</Text>
             </View>
-          </View>
+          </View> */}
           
           <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Price: $15 - 25</Text>
+            <Text style={styles.priceLabel}>Price: ${minAmount as string} - ${maxAmount as string}</Text>
           </View>
           
           <View style={styles.addressContainer}>
             <MapPin size={16} color={Colors.primary.DEFAULT} />
-            <Text style={styles.addressText}>45 Green Street to 123 Blue Avenue</Text>
-            <TouchableOpacity>
+            <Text style={styles.addressText}>{pickupAddress as string} to {dropoffAddress as string}</Text>
+            {/* <TouchableOpacity>
               <Text style={styles.changeText}>change</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
           
           <View style={styles.timeContainer}>
-            <Text style={styles.timeText}>Date Posted: Tues Oct 15 2024</Text>
+            <Text style={styles.timeText}>Pickup Date: {date as string} at {time as string}</Text>
+            <Text style={styles.timeText}>Payment Methods: {paymentMethods as string}</Text>
           </View>
         </View>
       </ScrollView>
@@ -137,6 +210,11 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     marginBottom: spacing.md,
   },
+  placeholderImage: {
+    backgroundColor: Colors.gray[200],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   thumbnailsContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
@@ -146,6 +224,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: borderRadius.md,
     marginRight: spacing.md,
+    backgroundColor: Colors.gray[200], // Placeholder background for thumbnail
   },
   detailsContainer: {
     padding: spacing.lg,

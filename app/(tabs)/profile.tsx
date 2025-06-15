@@ -1,11 +1,17 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux'; // Added useSelector
+import { RootState } from '@/store/store'; // Added RootState
 import { Bell, UserCircle, Settings, Shield, Palette, Calendar, History, Heart } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import Layout, { spacing, fontSizes, borderRadius } from '@/constants/Layout';
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -13,7 +19,7 @@ export default function ProfileScreen() {
           entering={FadeIn.duration(800)}
           style={styles.title}
         >
-          Profile
+          {t('profile.title')}
         </Animated.Text>
         <TouchableOpacity>
           <Bell color={Colors.primary.DEFAULT} size={24} />
@@ -30,58 +36,58 @@ export default function ProfileScreen() {
             style={styles.profileImage}
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>Marcel Wankbuba</Text>
-            <Text style={styles.description}>Delivering smiles, one package at a time</Text>
+            <Text style={styles.name}>{currentUser?.displayName || 'N/A'}</Text>
+            <Text style={styles.description}>{currentUser?.profileDescription || 'N/A'}</Text>
           </View>
         </Animated.View>
 
         <View style={styles.menuContainer}>
           <MenuItem 
             icon={<UserCircle size={24} color={Colors.primary.DEFAULT} />} 
-            title="Personal Details" 
-            description="Name, phone number, address, email"
+            title={t('profile.personalDetailsTitle')}
+            description={t('profile.personalDetailsDescription')}
             delay={400}
           />
           
           <MenuItem 
             icon={<Settings size={24} color={Colors.primary.DEFAULT} />} 
-            title="Account Settings" 
-            description="Password, payment and security"
+            title={t('profile.accountSettingsTitle')}
+            description={t('profile.accountSettingsDescription')}
             delay={500}
           />
           
           <MenuItem 
             icon={<Shield size={24} color={Colors.primary.DEFAULT} />} 
-            title="KYC & Verification" 
-            description="Verification Status: Verified"
+            title={t('profile.kycVerificationTitle')}
+            description={`${t('profile.kycVerificationDescriptionPrefix')} ${t('profile.kycVerificationStatusVerified')}`}
             delay={600}
           />
           
           <MenuItem 
             icon={<Palette size={24} color={Colors.primary.DEFAULT} />} 
-            title="App Preferences" 
-            description="Language and Theme"
+            title={t('profile.appPreferencesTitle')}
+            description={t('profile.appPreferencesDescription')}
             delay={700}
           />
           
           <MenuItem 
             icon={<Calendar size={24} color={Colors.primary.DEFAULT} />} 
-            title="Availability" 
-            description="Schedule, Unavailable"
+            title={t('profile.availabilityTitle')}
+            description={t('profile.availabilityDescription')}
             delay={800}
           />
           
           <MenuItem 
             icon={<History size={24} color={Colors.primary.DEFAULT} />} 
-            title="Delivery History" 
-            description="View completed, ongoing, and cancelled tasks"
+            title={t('profile.deliveryHistoryTitle')}
+            description={t('profile.deliveryHistoryDescription')}
             delay={900}
           />
           
           <MenuItem 
             icon={<Heart size={24} color={Colors.primary.DEFAULT} />} 
-            title="Favourites" 
-            description="Favorite Pickers for quick access"
+            title={t('profile.favouritesTitle')}
+            description={t('profile.favouritesDescription')}
             delay={1000}
           />
         </View>

@@ -28,4 +28,22 @@ export default {
     verifyPhoneNumber: 'Verify Phone Number',
     enterVerificationCode: 'Enter the verification code sent to',
   },
+  profile: {
+    title: "Profile",
+    personalDetailsTitle: "Personal Details",
+    personalDetailsDescription: "Name, phone number, address, email",
+    accountSettingsTitle: "Account Settings",
+    accountSettingsDescription: "Password, payment and security",
+    kycVerificationTitle: "KYC & Verification",
+    kycVerificationDescriptionPrefix: "Verification Status:",
+    kycVerificationStatusVerified: "Verified",
+    appPreferencesTitle: "App Preferences",
+    appPreferencesDescription: "Language and Theme",
+    availabilityTitle: "Availability",
+    availabilityDescription: "Schedule, Unavailable",
+    deliveryHistoryTitle: "Delivery History",
+    deliveryHistoryDescription: "View completed, ongoing, and cancelled tasks",
+    favouritesTitle: "Favourites",
+    favouritesDescription: "Favorite Pickers for quick access"
+  }
 };

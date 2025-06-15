@@ -30,7 +30,21 @@ export default function CreateDeliveryScreen() {
   };
   
   const handleNext = () => {
-    router.push('/create/details');
+    // For images, pass URIs as a JSON string or just count for now
+    // Example: first image URI. Max 4 images.
+    const imageUrisToSend = images.length > 0 ? JSON.stringify(images.slice(0, 4)) : JSON.stringify([]);
+
+    router.push({
+      pathname: '/create/details',
+      params: {
+        deliveryName,
+        size, // size is currently not well-defined in state, might be empty or default
+        weight,
+        type,
+        priority,
+        imageUris: imageUrisToSend
+      },
+    });
   };
   
   const handleCancel = () => {
